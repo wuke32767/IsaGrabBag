@@ -1,0 +1,80 @@
+﻿<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{BD4DC57E-AB09-4291-8473-AB07471DDAFA}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <NoStandardLibraries>false</NoStandardLibraries>
+    <AssemblyName>IsaMods</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>C:\Program Files %28x86%29\Steam\steamapps\common\Celeste\Mods\IsaGrabBag\Code\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RootNamespace>Celeste.Mod.IsaGrabBag</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BadelineFollower.cs" />
+    <Compile Include="IsaSettings.cs" />
+    <Compile Include="CustomNPC.cs" />
+    <Compile Include="CustomPlayer.cs" />
+    <Compile Include="DashSpinners.cs" />
+    <Compile Include="ForceVariant.cs" />
+    <Compile Include="Module.cs" />
+    <Compile Include="Monocle\ModdableStateMachine.cs" />
+    <Compile Include="StateMachineEXT.cs" />
+    <Compile Include="PurpleOrbs.cs" />
+    <Compile Include="SaveData.cs" />
+    <Compile Include="Session.cs" />
+    <Compile Include="WallToggling.cs" />
+    <Compile Include="WaterBoostMechanic.cs" />
+    <Compile Include="WindAgainstPlayer.cs" />
+    <Compile Include="WindTrigger.cs" />
+    <Compile Include="ZipLine.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Celeste">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Celeste\Celeste.exe</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="FNA">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Celeste\FNA.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="MMHOOK_Celeste">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Celeste\MMHOOK_Celeste.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="OutbackHelper">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Celeste\Mods\OutbackHelper\OutbackHelper.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.XML" />
+    <Reference Include="YamlDotNet">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Celeste\YamlDotNet.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSHARP.Targets" />
+  <ProjectExtensions>
+    <VisualStudio AllowExistingFolder="true" />
+  </ProjectExtensions>
+</Project>
