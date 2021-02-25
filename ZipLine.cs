@@ -71,6 +71,8 @@ namespace Celeste.Mod.IsaGrabBag
     {
         private const int STATE_NORMAL = 0;
         private const float ZIP_SPEED = 120f;
+        private const float ZIP_ACCEL = 190f;
+        private const float ZIP_TURN = 250f;
 
         private static ZipLine currentGrabbed;
 
@@ -121,8 +123,10 @@ namespace Celeste.Mod.IsaGrabBag
 
             currentGrabbed.speed = self.Speed.X;
 
-            if (Math.Abs(self.Speed.X) <= ZIP_SPEED || Math.Sign(Input.Aim.Value.X) != Math.Sign(self.Speed.X))
-                self.Speed.X = Calc.Approach(self.Speed.X, Input.Aim.Value.X * ZIP_SPEED, 185 * Engine.DeltaTime);
+            if (Math.Sign(Input.Aim.Value.X) == -Math.Sign(self.Speed.X))
+                self.Speed.X = Calc.Approach(self.Speed.X, Input.Aim.Value.X * ZIP_SPEED, ZIP_TURN * Engine.DeltaTime);
+            else if (Math.Abs(self.Speed.X) <= ZIP_SPEED || Math.Sign(Input.Aim.Value.X) != Math.Sign(self.Speed.X))
+                self.Speed.X = Calc.Approach(self.Speed.X, Input.Aim.Value.X * ZIP_SPEED, ZIP_ACCEL * Engine.DeltaTime);
 
             if (!GrabBagModule.CheckGrab|| self.Stamina <= 0)
             {
