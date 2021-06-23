@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Monocle;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace Celeste.Mod.IsaGrabBag
 {
@@ -41,6 +42,8 @@ namespace Celeste.Mod.IsaGrabBag
 
         public override void Awake(Scene scene)
         {
+            if (block == null)
+                return;
         }
         public override void Update()
         {
@@ -114,7 +117,7 @@ namespace Celeste.Mod.IsaGrabBag
 
             if (!fake)
             {
-                scene.Add(block = new DreamBlock(Center - new Vector2(8, 8), 16, 16, null, false, false, false));
+                scene.Add(block = new DreamBlock(Center - new Vector2(8, 8), 16, 16, null, false, false));
                 block.Visible = false;
             }
         }
@@ -144,12 +147,12 @@ namespace Celeste.Mod.IsaGrabBag
     class DreamSpinnerBorder : Entity
     {
         public static bool addedToScene = false;
-        
+
         public const int SPIN_TYPE_COUNT = 4;
         public const int SPRITE_MAIN = 21, SPRITE_FILLER = 14;
 
-        const int starSize = 1500;
-        const int depthDiv = starSize / 4;
+        const int starCount = 700;
+        const int depthDiv = starCount / 5;
 
         private const int WIDTH = 320 + 4, HEIGHT = 180 + 4, TEX_SIZE = WIDTH * HEIGHT;
         private Texture2D texture;
@@ -161,6 +164,8 @@ namespace Celeste.Mod.IsaGrabBag
         public static byte[] fillers = new byte[SPRITE_FILLER * SPRITE_FILLER];
 
         private Star[] stars;
+
+        private bool dreamdashEnabled = true;
 
         private static byte[] colorIndexes = new byte[]
         {
@@ -197,9 +202,33 @@ namespace Celeste.Mod.IsaGrabBag
             0x99, 0x99, 0x99, 0xFF, // 66b863
         };
 
+        private void SetBaseTex(int x, int y, byte color)
+        {
+            x %= WIDTH;
+            y %= HEIGHT;
+
+            if (x < 0)
+                x = (WIDTH + x);
+            if (y < 0)
+                y = (HEIGHT + y);
+
+            baseTex[x + y * WIDTH] = color;
+        }
+        private byte GetBaseTex(int x, int y)
+        {
+            if (x < 0)
+                x += WIDTH;
+            if (y < 0)
+                y += HEIGHT;
+            x %= WIDTH;
+            y %= HEIGHT;
+
+            return baseTex[x + y * WIDTH];
+        }
+
         public DreamSpinnerBorder()
         {
-            Depth = 500;
+            Depth = -10500;
 
             texture = new Texture2D(Draw.SpriteBatch.GraphicsDevice, WIDTH, HEIGHT);
         }
@@ -214,13 +243,13 @@ namespace Celeste.Mod.IsaGrabBag
         {
             base.Added(scene);
 
-            stars = new Star[starSize];
+            stars = new Star[starCount];
 
             int RNG_seed = (int)SceneAs<Level>().LevelOffset.X & 0xFFF;
             RNG_seed |= ((int)SceneAs<Level>().LevelOffset.Y & 0xFFF) << 12;
             Calc.PushRandom(RNG_seed);
 
-            for (int i = 0; i < starSize; ++i)
+            for (int i = 0; i < starCount; ++i)
             {
                 stars[i] = new Star(new Vector2(Calc.Random.NextFloat(WIDTH), Calc.Random.NextFloat(HEIGHT)), i / depthDiv, Calc.Random.NextFloat(1f) + 5f, Calc.Random.NextFloat(4f), (byte)Calc.Random.Next(0, 7));
             }
@@ -235,28 +264,20 @@ namespace Celeste.Mod.IsaGrabBag
 
         public override void Update()
         {
+
             Array.Clear(baseTex, 0, TEX_SIZE);
             Array.Clear(colors, 0, TEX_SIZE * 4);
 
             camPos = SceneAs<Level>().Camera.Position;
             camPos.X = (int)camPos.X;
             camPos.Y = (int)camPos.Y;
-            rect = new Rectangle((int)camPos.X - 2, (int)camPos.Y - 2, WIDTH, HEIGHT);
+            rect = new Rectangle((int)camPos.X, (int)camPos.Y, WIDTH, HEIGHT);
 
             byte c;
 
-            for (int i = 0; i < starSize; ++i)
+            for (int i = 0; i < starCount; ++i)
             {
                 stars[i].point -= (camPos - lastCamPos) * (5 - stars[i].depth) * 0.15f;
-
-                while (stars[i].point.X >= WIDTH - 2)
-                    stars[i].point.X -= WIDTH - 4;
-                while (stars[i].point.X < 2)
-                    stars[i].point.X += WIDTH - 4;
-                while (stars[i].point.Y >= HEIGHT - 2)
-                    stars[i].point.Y -= HEIGHT - 4;
-                while (stars[i].point.Y < 2)
-                    stars[i].point.Y += HEIGHT - 4;
 
                 c = stars[i].color;
 
@@ -269,56 +290,57 @@ namespace Celeste.Mod.IsaGrabBag
 
                 if (stars[i].depth == 0 && stars[i].anim >= 2 && stars[i].anim < 3)
                 {
-                    int index = ((int)stars[i].point.Y - 2) * WIDTH + (int)stars[i].point.X;
+                    int index = (int)stars[i].point.Y * WIDTH + (int)stars[i].point.X;
 
-                    baseTex[index] = c;
-                    baseTex[index + (WIDTH << 2)] = c;
+                    SetBaseTex((int)stars[i].point.X, (int)stars[i].point.Y - 2, c);
+                    SetBaseTex((int)stars[i].point.X, (int)stars[i].point.Y + 2, c);
+                    //baseTex[index] = c;
+                    //baseTex[index + (WIDTH << 2)] = c;
 
                     index += WIDTH - 1;
                     for (int j = 0; j < 3; ++j)
                     {
-                        baseTex[index + j] = c;
-                        baseTex[index + j + (WIDTH << 1)] = c;
+                        SetBaseTex((int)stars[i].point.X - 1 + j, (int)stars[i].point.Y - 1, c);
+                        SetBaseTex((int)stars[i].point.X - 1 + j, (int)stars[i].point.Y + 1, c);
                     }
                     index += WIDTH - 1;
 
                     for (int j = 0; j < 2; ++j)
                     {
-                        baseTex[index + j] = c;
-                        baseTex[index + j + 3] = c;
+                        SetBaseTex((int)stars[i].point.X - 2 + j, (int)stars[i].point.Y, c);
+                        SetBaseTex((int)stars[i].point.X + 1 + j, (int)stars[i].point.Y, c);
+                        //baseTex[index + j] = c;
+                        //baseTex[index + j + 3] = c;
                     }
                 }
                 else if ((stars[i].depth == 0 && stars[i].anim >= 1) || (stars[i].depth == 1 && stars[i].anim % 2 >= 1))
                 {
                     int index = ((int)stars[i].point.Y - 1) * WIDTH + (int)stars[i].point.X;
 
-                    baseTex[index] = c;
-                    baseTex[index + (WIDTH << 1)] = c;
+                    SetBaseTex((int)stars[i].point.X, (int)stars[i].point.Y - 1, c);
+                    SetBaseTex((int)stars[i].point.X, (int)stars[i].point.Y + 1, c);
 
                     index += WIDTH - 1;
                     for (int j = 0; j < 3; ++j)
                     {
-                        baseTex[index + j] = c;
+                        SetBaseTex((int)stars[i].point.X + j - 1, (int)stars[i].point.Y, c);
                     }
                 }
                 else
                 {
-                    baseTex[((int)stars[i].point.Y) * WIDTH + (int)stars[i].point.X] = c;
+                    SetBaseTex((int)stars[i].point.X, (int)stars[i].point.Y, c);
                 }
             }
 
             lastCamPos = camPos;
 
-            int x, xMax, y, yMax, type = 0;
+            int xMax, yMax, type = 0;
             int u, v, offset = 0;
 
-
-            bool dreamdashEnabled = true;
             Player player = Scene.Entities.FindFirst<Player>();
 
             if (player != null)
                 dreamdashEnabled = player.Inventory.DreamDash;
-
 
             foreach (var spin in Scene.Entities.FindAll<DreamSpinner>())
             {
@@ -335,10 +357,10 @@ namespace Celeste.Mod.IsaGrabBag
 
                 u = -Math.Min((int)(spin.X - camPos.X - 8), 0);
 
-                for (x = Math.Max((int)(spin.X - camPos.X - 8), 0); x < xMax; ++x)
+                for (int x = Math.Max((int)(spin.X - camPos.X - 8), 0); x < xMax; ++x)
                 {
                     v = -Math.Min((int)(spin.Y - camPos.Y - 8), 0);
-                    for (y = Math.Max((int)(spin.Y - camPos.Y - 8), 0); y < yMax; ++y)
+                    for (int y = Math.Max((int)(spin.Y - camPos.Y - 8), 0); y < yMax; ++y)
                     {
                         c = spinners[type][(u * SPRITE_MAIN) + v];
                         ++v;
@@ -351,14 +373,15 @@ namespace Celeste.Mod.IsaGrabBag
                             continue;
                         }
 
+                        int index = ((x + WIDTH - 2) % WIDTH) + ((y + HEIGHT - 2) % HEIGHT) * WIDTH;
                         if (c == 2)
                         {
-                            c = (byte)(baseTex[y * WIDTH + x] + 2);
-                            
+                            c = (byte)(baseTex[index] + 2);
+
                         }
                         c = (byte)(offset + c);
 
-                        Array.Copy(colorIndexes, (c - 1) << 2, colors, (y * WIDTH + x) << 2, 4);
+                        Array.Copy(colorIndexes, (c - 1) << 2, colors, index << 2, 4);
 
                     }
                     ++u;
@@ -371,10 +394,10 @@ namespace Celeste.Mod.IsaGrabBag
 
                     u = -Math.Min((int)(pos.X - camPos.X), 0);
 
-                    for (x = Math.Max((int)(pos.X - camPos.X), 0); x < xMax; ++x)
+                    for (int x = Math.Max((int)(pos.X - camPos.X), 0); x < xMax; ++x)
                     {
                         v = -Math.Min((int)(pos.Y - camPos.Y), 0);
-                        for (y = Math.Max((int)(pos.Y - camPos.Y), 0); y < yMax; ++y)
+                        for (int y = Math.Max((int)(pos.Y - camPos.Y), 0); y < yMax; ++y)
                         {
                             c = fillers[(u * SPRITE_FILLER) + v];
                             ++v;
@@ -385,13 +408,15 @@ namespace Celeste.Mod.IsaGrabBag
                                 continue;
                             }
 
+                            int index = ((x + WIDTH - 2) % WIDTH) + ((y + HEIGHT - 2) % HEIGHT) * WIDTH;
+
                             if (c == 2)
                             {
-                                c = (byte)(baseTex[y * WIDTH + x] + 2);
+                                c = (byte)(baseTex[index] + 2);
                             }
                             c = (byte)(offset + c);
 
-                            Array.Copy(colorIndexes, (c - 1) << 2, colors, (y * WIDTH + x) << 2, 4);
+                            Array.Copy(colorIndexes, (c - 1) << 2, colors, index << 2, 4);
 
                         }
                         ++u;
@@ -399,6 +424,9 @@ namespace Celeste.Mod.IsaGrabBag
                 }
 
             }
+            offset = 0;
+            if (!dreamdashEnabled)
+                offset = 18;
 
             texture.SetData(colors);
 

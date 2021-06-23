@@ -10,7 +10,7 @@ namespace Celeste.Mod.IsaGrabBag
         public static int ZipLineState { get; private set; }
 
         public override Type SessionType => typeof(IsaSession);
-        public IsaSession GrabBagSession => (IsaSession)base._Session;
+        public static IsaSession ThisSession => (IsaSession)Instance._Session;
 
         public override Type SettingsType => typeof(IsaSettings);
         public static IsaSettings Settings => (IsaSettings)Instance._Settings;
@@ -21,32 +21,6 @@ namespace Celeste.Mod.IsaGrabBag
 
         public static SpriteBank sprites { get; private set; }
 
-        public static bool CheckGrab
-        {
-            get
-            {
-                if (Everest.VersionCelesteString.Contains("1.3.1.2"))
-                {
-                    return NotBetaGrab;
-                }
-                else
-                {
-                    return BetaGrab;
-                }
-            }
-        }
-
-        
-
-        private static bool BetaGrab
-        {
-            get { return Input.GrabCheck; }
-        }
-        private static bool NotBetaGrab
-        {
-            get{ return Input.Grab.Check; }
-        }
-
         public GrabBagModule()
         {
             Instance = this;
@@ -54,11 +28,12 @@ namespace Celeste.Mod.IsaGrabBag
 
         public override void Initialize()
         {
-            
+
             base.Initialize();
         }
         public override void Load()
         {
+
             Everest.Events.Level.OnEnter += Level_OnEnter;
             Everest.Events.Level.OnExit += Level_OnExit;
             Everest.Events.Level.OnLoadLevel += LoadLevel;
@@ -69,12 +44,11 @@ namespace Celeste.Mod.IsaGrabBag
             On.Celeste.Player.UpdateSprite += UpdatePlayerVisuals;
             On.Celeste.Player.Update += ZipLine.OnPlayerUpdate;
 
-            //On.Celeste.Player.Added += OnPlayerAdded;
-
             On.Celeste.BadelineBoost.Awake += BadelineBoostAwake;
 
             On.Celeste.ChangeRespawnTrigger.OnEnter += OnChangeRespawn;
         }
+
         public override void Unload()
         {
             Everest.Events.Level.OnEnter -= Level_OnEnter;
@@ -87,30 +61,16 @@ namespace Celeste.Mod.IsaGrabBag
             On.Celeste.Player.UpdateSprite -= UpdatePlayerVisuals;
             On.Celeste.Player.Update -= ZipLine.OnPlayerUpdate;
 
-            //On.Celeste.Player.Added -= OnPlayerAdded;
-
             On.Celeste.BadelineBoost.Awake -= BadelineBoostAwake;
 
             On.Celeste.ChangeRespawnTrigger.OnEnter -= OnChangeRespawn;
-        }
-
-        private void OnPlayerAdded(On.Celeste.Player.orig_Added orig, Player self, Scene scene)
-        {
-            if (Settings.CustomCharacter)
-            {
-                scene.Add(new CustomPlayer(self));
-            }
-            else
-            {
-                orig(self, scene);
-            }
         }
 
         private void BadelineBoostAwake(On.Celeste.BadelineBoost.orig_Awake orig, BadelineBoost self, Scene scene)
         {
             orig(self, scene);
 
-            if (BadelineFollower.HasBadeline(scene as Level))
+            if ((scene as Level).Session.GetFlag(BadelineFollower.SESSION_FLAG))
                 self.Visible = false;
         }
 
@@ -139,13 +99,13 @@ namespace Celeste.Mod.IsaGrabBag
         {
             orig(self, player);
 
-            for (int i = 0; i < GrabBagSession.ColorWall.Length; i++)
+            for (int i = 0; i < ThisSession.ColorWall.Length; i++)
             {
-                GrabBagSession.ColorWallSave[i] = GrabBagSession.ColorWall[i];
+                ThisSession.ColorWallSave[i] = ThisSession.ColorWall[i];
             }
-            for (int i = 0; i < GrabBagSession.Variants.Length; i++)
+            for (int i = 0; i < ThisSession.Variants.Length; i++)
             {
-                GrabBagSession.Variants_Save[i] = GrabBagSession.Variants[i];
+                ThisSession.Variants_Save[i] = ThisSession.Variants[i];
             }
         }
 
@@ -153,7 +113,7 @@ namespace Celeste.Mod.IsaGrabBag
         {
             orig(self, position, spriteMode);
 
-            ZipLineState = self.StateMachine.AddState(ZipLine.ZipLineUpdate, begin: ZipLine.ZipLineBegin, end:ZipLine.ZipLineEnd, coroutine:ZipLine.ZipLineCoroutine);
+            ZipLineState = self.StateMachine.AddState(ZipLine.ZipLineUpdate, begin: ZipLine.ZipLineBegin, end: ZipLine.ZipLineEnd, coroutine: ZipLine.ZipLineCoroutine);
         }
 
         public override void LoadContent(bool firstLoad)
@@ -205,13 +165,13 @@ namespace Celeste.Mod.IsaGrabBag
             Level lvl = obj.SceneAs<Level>();
 
             playerInstance = obj;
-            for (int i = 0; i < GrabBagSession.ColorWall.Length; i++)
+            for (int i = 0; i < ThisSession.ColorWall.Length; i++)
             {
-                GrabBagSession.ColorWall[i] = GrabBagSession.ColorWallSave[i];
+                ThisSession.ColorWall[i] = ThisSession.ColorWallSave[i];
             }
-            for (int i = 0; i < GrabBagSession.Variants.Length; i++)
+            for (int i = 0; i < ThisSession.Variants.Length; i++)
             {
-                GrabBagSession.Variants[i] = GrabBagSession.Variants_Save[i];
+                ThisSession.Variants[i] = ThisSession.Variants_Save[i];
             }
             foreach (ToggleBlock block in obj.Scene.Entities.FindAll<ToggleBlock>())
             {
@@ -229,7 +189,7 @@ namespace Celeste.Mod.IsaGrabBag
                 obj.Add(new WaterFix(true, false));
             }
 
-            if (BadelineFollower.HasBadeline(lvl))
+            if (lvl.Session.GetFlag(BadelineFollower.SESSION_FLAG))
             {
                 foreach (BadelineBoost boost in lvl.Entities.FindAll<BadelineBoost>())
                 {
@@ -251,7 +211,7 @@ namespace Celeste.Mod.IsaGrabBag
                     }
                 }
             }
-            if (BadelineFollower.HasBadeline(lvl))
+            if (lvl.Session.GetFlag(BadelineFollower.SESSION_FLAG))
                 BadelineFollower.instance.dummy.Visible = true;
 
             BadelineFollower.CheckBooster(lvl, false);
@@ -261,7 +221,7 @@ namespace Celeste.Mod.IsaGrabBag
         {
             ForceVariantTrigger.SetVariantsToDefault();
 
-            if (BadelineFollower.HasBadeline(level))
+            if (BadelineFollower.instance != null)
                 BadelineFollower.instance.RemoveSelf();
 
             BadelineFollower.instance = null;
@@ -269,11 +229,11 @@ namespace Celeste.Mod.IsaGrabBag
 
         private void Level_OnEnter(Session session, bool fromSaveData)
         {
-            Logger.Log("IsaGrabBag", "Entering Level");
+            Logger.Log("IsaGrabBag", session.GetFlag(BadelineFollower.SESSION_FLAG).ToString());
 
-            for (int i = 0; i < GrabBagSession.Variants.Length; i++)
+            for (int i = 0; i < ThisSession.Variants.Length; i++)
             {
-                GrabBagSession.Variants_Default[i] = ForceVariantTrigger.GetVariantStatus((ForceVariantTrigger.Variant)i);
+                ThisSession.Variants_Default[i] = ForceVariantTrigger.GetVariantStatus((ForceVariantTrigger.Variant)i);
             }
             ForceVariantTrigger.Reinforce();
 
@@ -282,7 +242,7 @@ namespace Celeste.Mod.IsaGrabBag
                 WaterBoostMechanic.WaterBoost = true;
             }
         }
-        
+
         private void LoadLevel(Level level, Player.IntroTypes playerIntro, bool isFromLoader)
         {
             switch (playerIntro)
@@ -290,25 +250,25 @@ namespace Celeste.Mod.IsaGrabBag
                 default:
                     break;
                 case Player.IntroTypes.Respawn:
-                    for (int i = 0; i < GrabBagSession.Variants.Length; i++)
+                    for (int i = 0; i < ThisSession.Variants.Length; i++)
                     {
-                        GrabBagSession.Variants[i] = GrabBagSession.Variants_Save[i];
+                        ThisSession.Variants[i] = ThisSession.Variants_Save[i];
                     }
-                    for (int i = 0; i < GrabBagSession.ColorWall.Length; i++)
+                    for (int i = 0; i < ThisSession.ColorWall.Length; i++)
                     {
-                        GrabBagSession.ColorWall[i] = GrabBagSession.ColorWallSave[i];
+                        ThisSession.ColorWall[i] = ThisSession.ColorWallSave[i];
                     }
                     break;
                 case Player.IntroTypes.TempleMirrorVoid:
                 case Player.IntroTypes.WakeUp:
                 case Player.IntroTypes.Transition:
-                    for (int i = 0; i < GrabBagSession.ColorWall.Length; i++)
+                    for (int i = 0; i < ThisSession.ColorWall.Length; i++)
                     {
-                        GrabBagSession.ColorWallSave[i] = GrabBagSession.ColorWall[i];
+                        ThisSession.ColorWallSave[i] = ThisSession.ColorWall[i];
                     }
-                    for (int i = 0; i < GrabBagSession.Variants.Length; i++)
+                    for (int i = 0; i < ThisSession.Variants.Length; i++)
                     {
-                        GrabBagSession.Variants_Save[i] = GrabBagSession.Variants[i];
+                        ThisSession.Variants_Save[i] = ThisSession.Variants[i];
                     }
                     break;
             }
@@ -318,7 +278,7 @@ namespace Celeste.Mod.IsaGrabBag
                 block.SetState();
             }
 
-            if (level.Session.GetFlag("has_badeline_follow"))
+            if (level.Session.GetFlag(BadelineFollower.SESSION_FLAG))
             {
                 if (BadelineFollower.instance == null)
                 {
@@ -330,7 +290,7 @@ namespace Celeste.Mod.IsaGrabBag
                 }
                 BadelineFollower.Search();
 
-                if (BadelineFollower.HasBadeline(level.Session))
+                if (level.Session.GetFlag(BadelineFollower.SESSION_FLAG))
                     BadelineFollower.instance.dummy.Visible = true;
             }
         }
@@ -363,12 +323,12 @@ namespace Celeste.Mod.IsaGrabBag
                     return true;
                 case "isaBag/zipline":
                     level.Add(new ZipLine(entityData, offset));
-                    break;
+                    return true;
                 case "isaBag/waterBoost":
                     level.Add(new WaterBoostMechanic(entityData));
                     return true;
                 case "isaBag/baddyFollow":
-                    if (!BadelineFollower.HasBadeline(level))
+                    if (!level.Session.GetFlag(BadelineFollower.SESSION_FLAG))
                         BadelineFollower.SpawnBadelineFriendo(level);
                     return true;
             }

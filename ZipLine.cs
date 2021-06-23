@@ -96,7 +96,7 @@ namespace Celeste.Mod.IsaGrabBag
 
             ziplineBuffer = Calc.Approach(ziplineBuffer, 0, Engine.DeltaTime);
 
-            if (!GrabBagModule.CheckGrab)
+            if (!Input.GrabCheck)
                 ziplineBuffer = 0;
         }
 
@@ -128,7 +128,7 @@ namespace Celeste.Mod.IsaGrabBag
             else if (Math.Abs(self.Speed.X) <= ZIP_SPEED || Math.Sign(Input.Aim.Value.X) != Math.Sign(self.Speed.X))
                 self.Speed.X = Calc.Approach(self.Speed.X, Input.Aim.Value.X * ZIP_SPEED, ZIP_ACCEL * Engine.DeltaTime);
 
-            if (!GrabBagModule.CheckGrab|| self.Stamina <= 0)
+            if (!Input.GrabCheck || self.Stamina <= 0)
             {
                 return STATE_NORMAL;
             }
@@ -259,7 +259,7 @@ namespace Celeste.Mod.IsaGrabBag
             else
             {
 
-                if (currentGrabbed == null && player != null && !player.Dead && player.CanUnDuck && GrabBagModule.CheckGrab && ziplineBuffer == 0)
+                if (currentGrabbed == null && player != null && !player.Dead && player.CanUnDuck && Input.GrabCheck && ziplineBuffer == 0)
                 {
                     PropertyInfo info = typeof(Player).GetProperty("IsTired", BindingFlags.NonPublic | BindingFlags.Instance);
 

@@ -58,12 +58,20 @@
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Celeste\FNA.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="KeraLua">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Celeste\KeraLua.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="MMHOOK_Celeste">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Celeste\MMHOOK_Celeste.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="NLua">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Celeste\NLua.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="OutbackHelper">
-      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Celeste\Mods\OutbackHelper\OutbackHelper.dll</HintPath>
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Celeste\Mods Unzipped\OutbackHelper\OutbackHelper.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />

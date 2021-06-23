@@ -9,6 +9,8 @@ namespace Celeste.Mod.IsaGrabBag
 {
     public class BadelineFollower : Entity
     {
+        public const string SESSION_FLAG = "has_badeline_follower";
+
         private static BadelineBoost booster;
         private static bool firstBoost = false;
         private static bool boosting = false;
@@ -19,7 +21,7 @@ namespace Celeste.Mod.IsaGrabBag
         {
             if (lvl == null)
                 return false;
-            if (!HasBadeline(lvl))
+            if (!lvl.Session.GetFlag(SESSION_FLAG))
                 return false;
 
             var player = GrabBagModule.playerInstance;
@@ -53,7 +55,7 @@ namespace Celeste.Mod.IsaGrabBag
                     booster.Collidable = false;
                     booster.Visible = true;
 
-                    if (lvl.Session.GetFlag("has_badeline_follow"))
+                    if (lvl.Session.GetFlag(SESSION_FLAG))
                     {
                         booster.Get<PlayerCollider>().OnCollide = NewBoostMechanic;
                         booster.Visible = false;
@@ -305,14 +307,6 @@ namespace Celeste.Mod.IsaGrabBag
             yield break;
         }
 
-        public static bool HasBadeline(Level _level)
-        {
-            return _level.Session.GetFlag("has_badeline_follow");
-        }
-        public static bool HasBadeline(Session _session)
-        {
-            return _session.GetFlag("has_badeline_follow");
-        }
         public static void Search()
         {
             if (LookForBubble != null && LookForBubble.Active)
@@ -334,7 +328,7 @@ namespace Celeste.Mod.IsaGrabBag
             if (_level == null)
                 return;
 
-            _level.Session.SetFlag("has_badeline_follow", true);
+            _level.Session.SetFlag(SESSION_FLAG, true);
 
             if (player == null)
                 return;
@@ -368,7 +362,7 @@ namespace Celeste.Mod.IsaGrabBag
         }
         public BadelineFollower(Level level, BadelineDummy _dummy, Vector2 position) : base(position)
         {
-            level.Session.SetFlag("has_badeline_follow", true);
+            level.Session.SetFlag(SESSION_FLAG, true);
 
             level.Add(dummy = _dummy);
             dummy.Add(follower = new Follower());

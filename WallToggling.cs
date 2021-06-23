@@ -9,7 +9,7 @@ namespace Celeste.Mod.IsaGrabBag
 {
     public class WallToggleData : Entity
     {
-        
+
 
         public WallToggleData(Vector2 position) : base(position)
         {
@@ -17,7 +17,7 @@ namespace Celeste.Mod.IsaGrabBag
         }
 
         public bool[] ColorWallEnabled { get; private set; }
-        
+
         public static void CheckForToggleInstance(Scene scene)
         {
             if (dataInstance == null)
@@ -27,15 +27,15 @@ namespace Celeste.Mod.IsaGrabBag
         }
         public static bool IsEnabled(int colorValue, bool inverted = false)
         {
-            if (GrabBagModule.Instance.GrabBagSession != null)
-                return GrabBagModule.Instance.GrabBagSession.ColorWall[colorValue] != inverted;
+            if (GrabBagModule.ThisSession != null)
+                return GrabBagModule.ThisSession.ColorWall[colorValue] != inverted;
             return false;
         }
         public static void Toggle(int value)
         {
-            if (GrabBagModule.Instance.GrabBagSession != null)
+            if (GrabBagModule.ThisSession != null)
             {
-                GrabBagModule.Instance.GrabBagSession.ColorWall[value] = !GrabBagModule.Instance.GrabBagSession.ColorWall[value];
+                GrabBagModule.ThisSession.ColorWall[value] = !GrabBagModule.ThisSession.ColorWall[value];
             }
         }
 
@@ -62,7 +62,8 @@ namespace Celeste.Mod.IsaGrabBag
         public static WallToggleData dataInstance { get; private set; }
 
     }
-    public class ToggleBlock : Solid {
+    public class ToggleBlock : Solid
+    {
         public static Color[] BOX_COLORS { get; private set; } = new Color[] { new Color(1, 0.2f, 0.2f), new Color(0.2f, 1, 0.2f), new Color(0.2f, 0.2f, 1) };
 
         public int colorValue;
@@ -114,7 +115,7 @@ namespace Celeste.Mod.IsaGrabBag
                 }
             }
             WallToggleData.CheckForToggleInstance(scene);
-            
+
             if (group == null)
             {
                 groupLeader = true;
@@ -188,7 +189,7 @@ namespace Celeste.Mod.IsaGrabBag
                     }
                 }
             }
-            
+
             SetState();
             updatedPortals = false;
         }
@@ -247,7 +248,7 @@ namespace Celeste.Mod.IsaGrabBag
 
             if (this.groupLeader)
             {
-                Vector2 scale = new Vector2(1f , 1f);
+                Vector2 scale = new Vector2(1f, 1f);
                 foreach (ToggleBlock toggleBlock in this.group)
                 {
                     foreach (Image image3 in toggleBlock.all)
@@ -341,7 +342,8 @@ namespace Celeste.Mod.IsaGrabBag
         //    Draw.Rect(Collider, BOX_COLORS[colorValue] * (WallToggleData.IsEnabled(colorValue, inverted) ? 1 : .5f));
         //}
     }
-    public class ToggleSwitch : CrushBlock {
+    public class ToggleSwitch : CrushBlock
+    {
         public int SwitchIndex;
         bool hitSide, hitTop;
 
@@ -353,7 +355,7 @@ namespace Celeste.Mod.IsaGrabBag
             SwitchIndex = index;
             OnDashCollide = NewCollision;
             SurfaceSoundIndex = 11;
-            
+
             switch (SwitchIndex)
             {
                 default:
@@ -411,10 +413,10 @@ namespace Celeste.Mod.IsaGrabBag
                 WallToggleData.UpdatePortals(SceneAs<Level>());
 
 #if !USE_REFILLS
-                if (!player.Inventory.NoRefills)
+            if (!player.Inventory.NoRefills)
 #endif
                 player.RefillDash();
-            
+
             return DashCollisionResults.Bounce;
         }
         public override void Added(Scene scene)
@@ -433,8 +435,8 @@ namespace Celeste.Mod.IsaGrabBag
         }
     }
 
-    public class ToggleSwitchTrigger : Trigger 
-	{
+    public class ToggleSwitchTrigger : Trigger
+    {
         private int color;
         private bool onlyOnce;
         private bool enable;
@@ -450,15 +452,15 @@ namespace Celeste.Mod.IsaGrabBag
         {
             base.OnEnter(player);
 
-            if (GrabBagModule.Instance.GrabBagSession != null)
+            if (GrabBagModule.ThisSession != null)
             {
-                GrabBagModule.Instance.GrabBagSession.ColorWall[color] = enable;
+                GrabBagModule.ThisSession.ColorWall[color] = enable;
             }
             foreach (ToggleBlock block in Scene.Entities.FindAll<ToggleBlock>())
             {
                 block.SetState();
             }
-            if (onlyOnce) 
+            if (onlyOnce)
             {
                 RemoveSelf();
             }

@@ -48,7 +48,7 @@ namespace Celeste.Mod.IsaGrabBag
         {
             base.OnEnter(player);
 
-            bool? currentVal = GrabBagModule.Instance.GrabBagSession.Variants[(int)variant];
+            bool? currentVal = GrabBagModule.ThisSession.Variants[(int)variant];
 
             switch (enable)
             {
@@ -89,18 +89,18 @@ namespace Celeste.Mod.IsaGrabBag
         {
             for (int i = 0; i < 11; i++)
             {
-                if (GrabBagModule.Instance.GrabBagSession.Variants[i] == null)
-                    GrabBagModule.Instance.GrabBagSession.Variants_Default[i] = GetVariantStatus((Variant)i);
+                if (GrabBagModule.ThisSession.Variants[i] == null)
+                    GrabBagModule.ThisSession.Variants_Default[i] = GetVariantStatus((Variant)i);
                 else
-                    SetVariant((Variant)i, GrabBagModule.Instance.GrabBagSession.Variants[i], true);
+                    SetVariant((Variant)i, GrabBagModule.ThisSession.Variants[i], true);
             }
         }
         public static void OnRespawn()
         {
             for (int i = 0; i < 11; i++)
             {
-                if (GrabBagModule.Instance.GrabBagSession.Variants[i] == null && GrabBagModule.Instance.GrabBagSession.Variants_Default[i].HasValue)
-                    SetVariantInGame((Variant)i, GrabBagModule.Instance.GrabBagSession.Variants_Default[i].Value);
+                if (GrabBagModule.ThisSession.Variants[i] == null && GrabBagModule.ThisSession.Variants_Default[i].HasValue)
+                    SetVariantInGame((Variant)i, GrabBagModule.ThisSession.Variants_Default[i].Value);
             }
         }
         public static void SetVariantsToDefault()
@@ -116,7 +116,7 @@ namespace Celeste.Mod.IsaGrabBag
             if (_ignoreNull && _value == null)
                 return;
 
-            IsaSession saveData = GrabBagModule.Instance.GrabBagSession;
+            IsaSession saveData = GrabBagModule.ThisSession;
 
             // Get the value needed to set to the vanilla game.  If _value is null, reset vanilla to game.  Otherwise, set value;
             bool value = _value == null ? GetVariantDefaultValue(variant) : _value.Value;
@@ -188,11 +188,11 @@ namespace Celeste.Mod.IsaGrabBag
         }
         public static bool GetVariantDefaultValue(Variant variant)
         {
-            if (GrabBagModule.Instance.GrabBagSession.Variants[(int)variant] == null || !GrabBagModule.Instance.GrabBagSession.Variants_Default[(int)variant].HasValue)
+            if (GrabBagModule.ThisSession.Variants[(int)variant] == null || !GrabBagModule.ThisSession.Variants_Default[(int)variant].HasValue)
             {
                 return GetVariantStatus(variant);
             }
-            return GrabBagModule.Instance.GrabBagSession.Variants_Default[(int)variant].Value;
+            return GrabBagModule.ThisSession.Variants_Default[(int)variant].Value;
         }
         public static bool GetVariantStatus(Variant variant)
         {
