@@ -12,7 +12,7 @@ namespace Celeste.Mod.IsaGrabBag
     {
         private static bool dreamdashEnabled = true;
         private DreamBlock block;
-        private bool hasDashed, fake;
+        private bool hasCollided, fake;
 
         public List<DreamSpinner> spinners;
         public List<Vector2> fillOffset;
@@ -20,6 +20,9 @@ namespace Celeste.Mod.IsaGrabBag
         public int RNG;
 
         public bool Fragile;
+
+        public static int DebrisCount = 0;
+        private static readonly Color debrisColor = new Color(0xC1, 0x8A, 0x53);
 
         public DreamSpinner(EntityData data, Vector2 offset, bool _fake)
             : this(data.Position + offset, data.Bool("useOnce", false), _fake)
@@ -40,17 +43,18 @@ namespace Celeste.Mod.IsaGrabBag
             Collidable = false;
         }
 
-        public override void Awake(Scene scene)
-        {
-            if (block == null)
-                return;
-        }
         public override void Update()
         {
             if (fake)
                 return;
 
-            Player player = Scene.Entities.FindFirst<Player>();
+            Player player = GrabBagModule.playerInstance;
+
+            foreach (var deb in Scene.CollideAll<Actor>(block.Collider.Bounds))
+            {
+                if (deb is CrystalDebris)
+                    deb.RemoveSelf();
+            }
 
             if (player != null)
             {
@@ -59,18 +63,16 @@ namespace Celeste.Mod.IsaGrabBag
                 {
                     bool isColliding = block.Collidable && player.Collider.Collide(block);
 
-                    if (!isColliding && hasDashed)
+                    if (!isColliding && hasCollided)
                     {
                         RemoveSelf();
                         block.RemoveSelf();
 
                         Audio.Play("event:/game/06_reflection/fall_spike_smash", Position);
-                        Audio.Play("event:/game/06_reflection/fall_spike_smash", Position);
-                        Audio.Play("event:/game/06_reflection/fall_spike_smash", Position);
-                        CrystalDebris.Burst(Position, new Color(0xC1, 0x8A, 0x53), false, 4); //c18a53
+                        CrystalDebris.Burst(Center, debrisColor, false, 4); //c18a53
                         return;
                     }
-                    hasDashed = isColliding;
+                    hasCollided = isColliding;
                 }
                 if ((player.DashAttacking || player.StateMachine.State == 9) && dreamdashEnabled)
                 {
@@ -81,6 +83,7 @@ namespace Celeste.Mod.IsaGrabBag
                 {
                     block.Collidable = false;
                     Collidable = true;
+
                 }
             }
         }
@@ -119,6 +122,8 @@ namespace Celeste.Mod.IsaGrabBag
             {
                 scene.Add(block = new DreamBlock(Center - new Vector2(8, 8), 16, 16, null, false, false));
                 block.Visible = false;
+
+                //block.Collider = new Circle(10.5f, 8, 8);
             }
         }
 
@@ -264,7 +269,6 @@ namespace Celeste.Mod.IsaGrabBag
 
         public override void Update()
         {
-
             Array.Clear(baseTex, 0, TEX_SIZE);
             Array.Clear(colors, 0, TEX_SIZE * 4);
 
@@ -294,8 +298,6 @@ namespace Celeste.Mod.IsaGrabBag
 
                     SetBaseTex((int)stars[i].point.X, (int)stars[i].point.Y - 2, c);
                     SetBaseTex((int)stars[i].point.X, (int)stars[i].point.Y + 2, c);
-                    //baseTex[index] = c;
-                    //baseTex[index + (WIDTH << 2)] = c;
 
                     index += WIDTH - 1;
                     for (int j = 0; j < 3; ++j)
@@ -309,8 +311,6 @@ namespace Celeste.Mod.IsaGrabBag
                     {
                         SetBaseTex((int)stars[i].point.X - 2 + j, (int)stars[i].point.Y, c);
                         SetBaseTex((int)stars[i].point.X + 1 + j, (int)stars[i].point.Y, c);
-                        //baseTex[index + j] = c;
-                        //baseTex[index + j + 3] = c;
                     }
                 }
                 else if ((stars[i].depth == 0 && stars[i].anim >= 1) || (stars[i].depth == 1 && stars[i].anim % 2 >= 1))
@@ -337,7 +337,7 @@ namespace Celeste.Mod.IsaGrabBag
             int xMax, yMax, type = 0;
             int u, v, offset = 0;
 
-            Player player = Scene.Entities.FindFirst<Player>();
+            Player player = GrabBagModule.playerInstance;
 
             if (player != null)
                 dreamdashEnabled = player.Inventory.DreamDash;

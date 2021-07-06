@@ -69,6 +69,12 @@ namespace Celeste.Mod.IsaGrabBag
     }
     public class ZipLine : Entity
     {
+        private static void MoveEntityTo(Actor ent, Vector2 position)
+        {
+            ent.MoveToX(position.X);
+            ent.MoveToY(position.Y);
+        }
+
         private const int STATE_NORMAL = 0;
         private const float ZIP_SPEED = 120f;
         private const float ZIP_ACCEL = 190f;
@@ -123,6 +129,12 @@ namespace Celeste.Mod.IsaGrabBag
 
             currentGrabbed.speed = self.Speed.X;
 
+            if (Math.Abs(self.LiftSpeed.X) <= Math.Abs(self.Speed.X))
+            {
+                self.LiftSpeed = self.Speed;
+                self.LiftSpeedGraceTime = 0.15f;
+            }
+
             if (Math.Sign(Input.Aim.Value.X) == -Math.Sign(self.Speed.X))
                 self.Speed.X = Calc.Approach(self.Speed.X, Input.Aim.Value.X * ZIP_SPEED, ZIP_TURN * Engine.DeltaTime);
             else if (Math.Abs(self.Speed.X) <= ZIP_SPEED || Math.Sign(Input.Aim.Value.X) != Math.Sign(self.Speed.X))
@@ -134,12 +146,17 @@ namespace Celeste.Mod.IsaGrabBag
             }
             if (Input.Jump.Pressed)
             {
-                Input.Jump.ConsumeBuffer();
+                Input.Jump.ConsumePress();
 
                 self.Stamina -= 110f / 8f;
 
                 self.Speed.X *= 0.1f;
+
                 self.Jump(false, true);
+
+                self.LiftSpeed *= 0.4f;
+                //self.ResetLiftSpeed();
+
 
                 currentGrabbed.speed = Calc.Approach(currentGrabbed.speed, 0, 20);
 
@@ -147,12 +164,12 @@ namespace Celeste.Mod.IsaGrabBag
             }
             if (self.CanDash)
             {
+
                 self.StartDash();
                 return 2;
             }
 
             self.Stamina -= 5 * Engine.DeltaTime;
-            
 
             return GrabBagModule.ZipLineState;
         }
@@ -181,8 +198,9 @@ namespace Celeste.Mod.IsaGrabBag
             {
                 tween.Update();
 
-                self.Position = Vector2.Lerp(playerInit, playerLerp, tween.Percent);
+                MoveEntityTo(self, Vector2.Lerp(playerInit, playerLerp, tween.Percent));
                 currentGrabbed.Position = Vector2.Lerp(zipInit, zipLerp, tween.Percent);
+
                 yield return null;
             }
 
@@ -190,10 +208,7 @@ namespace Celeste.Mod.IsaGrabBag
 
             self.Speed = speed;
 
-            self.LiftSpeed = self.Speed;
-            self.LiftSpeedGraceTime = 0.2f;
-
-            self.Position = playerLerp;
+            MoveEntityTo(self, playerLerp);
             currentGrabbed.Position = zipLerp;
 
             yield break;

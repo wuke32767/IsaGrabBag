@@ -31,6 +31,7 @@
     <RootNamespace>Celeste.Mod.IsaGrabBag</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ArrowBlock.cs" />
     <Compile Include="BadelineFollower.cs" />
     <Compile Include="IsaSettings.cs" />
     <Compile Include="CustomNPC.cs" />
@@ -40,7 +41,6 @@
     <Compile Include="Module.cs" />
     <Compile Include="Monocle\ModdableStateMachine.cs" />
     <Compile Include="StateMachineEXT.cs" />
-    <Compile Include="PurpleOrbs.cs" />
     <Compile Include="SaveData.cs" />
     <Compile Include="Session.cs" />
     <Compile Include="WallToggling.cs" />
