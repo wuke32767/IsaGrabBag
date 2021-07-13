@@ -7,8 +7,18 @@ using System.Collections.Generic;
 
 namespace Celeste.Mod.IsaGrabBag
 {
+    struct RenderRectangle {
+        public Rectangle rect;
+        public Color color;
+
+        public RenderRectangle(Rectangle r, Color c) { rect = r; color = c; }
+	}
     public class ZipLineRender : Entity
     {
+        private static readonly Color
+            darkLine = Calc.HexToColor("9292a9"),
+            lightLine = Calc.HexToColor("bbc0ce");
+
         private readonly ZipLine zipInst;
 
         private Sprite sprite;
@@ -31,36 +41,39 @@ namespace Celeste.Mod.IsaGrabBag
             base.Update();
         }
 
-        List<Rectangle> renderRects = new List<Rectangle>();
+        List<RenderRectangle> renderList = new List<RenderRectangle>();
 
         public override void Render()
         {
-            renderRects.Clear();
+            renderList.Clear();
 
             Position = zipInst.Position;
 
-            Rectangle tempRect = new Rectangle((int)zipInst.Left, (int)zipInst.Y + 1, (int)(zipInst.Right - zipInst.Left), 0);
-            tempRect.Inflate(8, 1);
+            Rectangle tempRect = new Rectangle((int)zipInst.Left, (int)zipInst.Y, (int)(zipInst.Right - zipInst.Left), 1);
+            tempRect.Inflate(8, 0);
+            
+            renderList.Add(new RenderRectangle(tempRect, darkLine));
 
+            tempRect.Y -= 1;
 
-            renderRects.Add(tempRect);
+            renderList.Add(new RenderRectangle(tempRect, lightLine));
 
             int left = tempRect.Left, right = tempRect.Right;
 
-            renderRects.Add(new Rectangle(left - 2, (int)Y - 2, 2, 6));
-            renderRects.Add(new Rectangle(right, (int)Y - 2, 2, 6));
+            renderList.Add(new RenderRectangle(new Rectangle(left - 2, (int)Y - 3, 2, 6), darkLine));
+            renderList.Add(new RenderRectangle(new Rectangle(right, (int)Y - 3, 2, 6), darkLine));
 
-            foreach (var rect in renderRects)
+            foreach (var rl in renderList)
             {
-                Rectangle r = rect;
+                Rectangle r = rl.rect;
                 r.Inflate(1, 0);
                 Draw.Rect(r, Color.Black);
                 r.Inflate(-1, 1);
                 Draw.Rect(r, Color.Black);
             }
-            foreach (var rect in renderRects)
+            foreach (var rl in renderList)
             {
-                Draw.Rect(rect, Color.SlateGray);
+                Draw.Rect(rl.rect, rl.color);
             }
 
             base.Render();
@@ -80,7 +93,7 @@ namespace Celeste.Mod.IsaGrabBag
         private const float ZIP_ACCEL = 190f;
         private const float ZIP_TURN = 250f;
 
-        private static ZipLine currentGrabbed;
+        private static ZipLine currentGrabbed, lastGrabbed;
 
         private float left, right, height;
 
@@ -91,6 +104,13 @@ namespace Celeste.Mod.IsaGrabBag
         private bool grabbed;
 
         private static float ziplineBuffer;
+        
+        private static bool CanGrabZip(ZipLine line){
+            if (lastGrabbed != line)
+                return true;
+                
+            return ziplineBuffer <= 0;
+        }
 
         private Sprite sprite;
 
@@ -263,7 +283,6 @@ namespace Celeste.Mod.IsaGrabBag
                 }
                 if ((player.CenterX > right || player.CenterX < left))
                 {
-
                     player.Speed.X = 0;
                 }
                 player.CenterX = MathHelper.Clamp(player.CenterX, left, right);
@@ -273,14 +292,14 @@ namespace Celeste.Mod.IsaGrabBag
             }
             else
             {
-
-                if (currentGrabbed == null && player != null && !player.Dead && player.CanUnDuck && Input.GrabCheck && ziplineBuffer == 0)
+                if (currentGrabbed == null && player != null && !player.Dead && player.CanUnDuck && Input.GrabCheck && CanGrabZip(this))
                 {
                     PropertyInfo info = typeof(Player).GetProperty("IsTired", BindingFlags.NonPublic | BindingFlags.Instance);
 
                     if (player.CollideCheck(this) && (!(bool)info.GetValue(player)))
                     {
                         currentGrabbed = this;
+                        lastGrabbed = currentGrabbed;
 
                         player.StateMachine.State = GrabBagModule.ZipLineState;
 

@@ -33,6 +33,8 @@
   <ItemGroup>
     <Compile Include="ArrowBlock.cs" />
     <Compile Include="BadelineFollower.cs" />
+    <Compile Include="CornerBoostBlock.cs" />
+    <Compile Include="GrabBagMeta.cs" />
     <Compile Include="IsaSettings.cs" />
     <Compile Include="CustomNPC.cs" />
     <Compile Include="CustomPlayer.cs" />

@@ -226,40 +226,33 @@ namespace Celeste.Mod.IsaGrabBag
     }
     public class VariantEnforcer : Component
     {
-        public VariantEnforcer(bool active, bool visible) : base(active, visible) { }
-
-        public override void Update()
-        {
-            ForceVariantTrigger.Reinforce();
-        }
-    }
-
-    public class WaterFix : Component
-    {
-        public WaterFix(bool active, bool visible) : base(active, visible) { }
+        public VariantEnforcer() : base(true, false) { }
 
         private Player player;
 
-        public override void Update()
-        {
-            if (!WaterBoostMechanic.WaterBoost)
-                return;
-
+        public override void Update() {
             player = Entity as Player;
-            if (player == null || !player.Collidable)
-            {
+            if (player == null) {
                 return;
             }
+
+            ForceVariantTrigger.Reinforce();
+            if (GrabBagModule.GrabBagMeta.WaterBoost)
+                WaterBoost();
+        }
+
+        private void WaterBoost() {
+
+            if (!player.Collidable)
+                return;
 
             Vector2 posOffset = player.Position + player.Speed * Engine.DeltaTime * 2;
 
             bool isInWater = player.CollideCheck<Water>(posOffset) || player.CollideCheck<Water>(posOffset + Vector2.UnitY * -8f);
 
-            if (!isInWater && player.StateMachine.State == 3 && (player.Speed.Y < 0 || Input.MoveY.Value == -1 || Input.Jump.Check))
-            {
+            if (!isInWater && player.StateMachine.State == 3 && (player.Speed.Y < 0 || Input.MoveY.Value == -1 || Input.Jump.Check)) {
                 player.Speed.Y = (Input.MoveY.Value == -1 || Input.Jump.Check) ? -110 : 0;
-                if (player.Speed.Y < -1)
-                {
+                if (player.Speed.Y < -1) {
                     player.Speed.X *= 1.1f;
                 }
             }

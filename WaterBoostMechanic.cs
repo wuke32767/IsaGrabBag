@@ -10,11 +10,9 @@ namespace Celeste.Mod.IsaGrabBag
 {
     public class WaterBoostMechanic : Entity
     {
-        public static bool WaterBoost { get; set; }
-
         public WaterBoostMechanic(EntityData _data)
         {
-            WaterBoost = _data.Bool("boostEnabled");
+            GrabBagModule.GrabBagMeta.WaterBoost = _data.Bool("boostEnabled");
         }
     }
 }

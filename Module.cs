@@ -7,6 +7,9 @@ namespace Celeste.Mod.IsaGrabBag
 {
     public class GrabBagModule : EverestModule
     {
+        public static GrabBagMeta GrabBagMeta { get { return gbMeta; } }
+        private static GrabBagMeta gbMeta;
+
         public static int ZipLineState { get; private set; }
 
         public override Type SessionType => typeof(IsaSession);
@@ -33,6 +36,7 @@ namespace Celeste.Mod.IsaGrabBag
         }
         public override void Load()
         {
+            CornerBoostBlock.Load();
 
             Everest.Events.Level.OnEnter += Level_OnEnter;
             Everest.Events.Level.OnExit += Level_OnExit;
@@ -49,8 +53,9 @@ namespace Celeste.Mod.IsaGrabBag
             On.Celeste.ChangeRespawnTrigger.OnEnter += OnChangeRespawn;
         }
 
-        public override void Unload()
-        {
+        public override void Unload() {
+            CornerBoostBlock.Unload();
+
             Everest.Events.Level.OnEnter -= Level_OnEnter;
             Everest.Events.Level.OnExit -= Level_OnExit;
             Everest.Events.Level.OnLoadLevel -= LoadLevel;
@@ -181,12 +186,7 @@ namespace Celeste.Mod.IsaGrabBag
 
             if (obj.Get<VariantEnforcer>() == null)
             {
-                obj.Add(new VariantEnforcer(true, false));
-            }
-
-            if (obj.Get<WaterFix>() == null)
-            {
-                obj.Add(new WaterFix(true, false));
+                obj.Add(new VariantEnforcer());
             }
 
             if (lvl.Session.GetFlag(BadelineFollower.SESSION_FLAG))
@@ -219,6 +219,8 @@ namespace Celeste.Mod.IsaGrabBag
 
         private void Level_OnExit(Level level, LevelExit exit, LevelExit.Mode mode, Session session, HiresSnow snow)
         {
+            gbMeta = null;
+
             ForceVariantTrigger.SetVariantsToDefault();
 
             if (BadelineFollower.instance != null)
@@ -227,9 +229,26 @@ namespace Celeste.Mod.IsaGrabBag
             BadelineFollower.instance = null;
         }
 
-        private void Level_OnEnter(Session session, bool fromSaveData)
-        {
-            Logger.Log("IsaGrabBag", session.GetFlag(BadelineFollower.SESSION_FLAG).ToString());
+        private void Level_OnEnter(Session session, bool fromSaveData) {
+			try {
+                GrabBagWrapperMeta parsed;
+                string s = session.Area.GetSID();
+                Logger.Log("IsaGrabBag", s);
+
+                if (Everest.Content.Get(session.Area.SID).TryGetMeta(out parsed)) {
+                    gbMeta = parsed.IsaGrabBag;
+                }
+				else {
+                    gbMeta = null;
+				}
+            }
+			catch (Exception e) {
+                Logger.Log("IsaGrabBag", "Unable to properly get metadata");
+                Logger.LogDetailed(e);
+			}
+
+            if (gbMeta == null)
+                gbMeta = GrabBagMeta.Default(session.Area);
 
             for (int i = 0; i < ThisSession.Variants.Length; i++)
             {
@@ -239,12 +258,14 @@ namespace Celeste.Mod.IsaGrabBag
 
             if (session.Area.LevelSet.StartsWith("SpringCollab2020"))
             {
-                WaterBoostMechanic.WaterBoost = true;
+                GrabBagMeta.WaterBoost = true;
             }
         }
 
-        private void LoadLevel(Level level, Player.IntroTypes playerIntro, bool isFromLoader)
-        {
+        private void LoadLevel(Level level, Player.IntroTypes playerIntro, bool isFromLoader) {
+            if (GrabBagMeta == null)
+                gbMeta = GrabBagMeta.Default(level.Session.Area);
+
             switch (playerIntro)
             {
                 default:
@@ -298,8 +319,13 @@ namespace Celeste.Mod.IsaGrabBag
 
         private bool Level_OnLoadEntity(Level level, LevelData levelData, Vector2 offset, EntityData entityData)
         {
-            switch (entityData.Name)
-            {
+            switch (entityData.Name) {
+                case "isaBag/arrowBlock":
+                    level.Add(new ArrowBlock(entityData, offset));
+                    return true;
+                case "isaBag/cornerBlock":
+                    level.Add(new CornerBoostBlock(entityData, offset));
+                    return true;
                 case "CoreHeatWindTrigger":
                     level.Add(new HotColdWind(entityData, offset));
                     return true;

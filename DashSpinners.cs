@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace Celeste.Mod.IsaGrabBag
 {
-    public class DreamSpinner : CrystalStaticSpinner
+    public class DreamSpinner : Entity
     {
         private static bool dreamdashEnabled = true;
         private DreamBlock block;
@@ -21,7 +21,6 @@ namespace Celeste.Mod.IsaGrabBag
 
         public bool Fragile;
 
-        public static int DebrisCount = 0;
         private static readonly Color debrisColor = new Color(0xC1, 0x8A, 0x53);
 
         public DreamSpinner(EntityData data, Vector2 offset, bool _fake)
@@ -30,10 +29,19 @@ namespace Celeste.Mod.IsaGrabBag
         }
 
         public DreamSpinner(Vector2 position, bool _useOnce, bool _fake)
-            : base(position, false, CrystalColor.Red)
         {
+            Position = position;
+
             spinners = new List<DreamSpinner>();
             fillOffset = new List<Vector2>();
+
+            Collider = new ColliderList(
+                new Hitbox(16, 4, -8, -3),
+                new Circle(6)
+                );
+
+            Add(new PlayerCollider(OnPlayer));
+            Add(new LedgeBlocker());
 
             Fragile = _useOnce;
             fake = _fake;
@@ -42,6 +50,10 @@ namespace Celeste.Mod.IsaGrabBag
             Depth = -8500;
             Collidable = false;
         }
+
+        private void OnPlayer(Player player) {
+            player.Die((player.Center - Center).SafeNormalize());
+		}
 
         public override void Update()
         {
@@ -123,7 +135,8 @@ namespace Celeste.Mod.IsaGrabBag
                 scene.Add(block = new DreamBlock(Center - new Vector2(8, 8), 16, 16, null, false, false));
                 block.Visible = false;
 
-                //block.Collider = new Circle(10.5f, 8, 8);
+                if (GrabBagModule.GrabBagMeta.RoundDreamSpinner)
+                    block.Collider = new Circle(9f, 8, 8);
             }
         }
 
@@ -231,9 +244,8 @@ namespace Celeste.Mod.IsaGrabBag
             return baseTex[x + y * WIDTH];
         }
 
-        public DreamSpinnerBorder()
-        {
-            Depth = -10500;
+        public DreamSpinnerBorder() {
+            Depth = -8500;
 
             texture = new Texture2D(Draw.SpriteBatch.GraphicsDevice, WIDTH, HEIGHT);
         }
@@ -294,18 +306,14 @@ namespace Celeste.Mod.IsaGrabBag
 
                 if (stars[i].depth == 0 && stars[i].anim >= 2 && stars[i].anim < 3)
                 {
-                    int index = (int)stars[i].point.Y * WIDTH + (int)stars[i].point.X;
-
                     SetBaseTex((int)stars[i].point.X, (int)stars[i].point.Y - 2, c);
                     SetBaseTex((int)stars[i].point.X, (int)stars[i].point.Y + 2, c);
 
-                    index += WIDTH - 1;
                     for (int j = 0; j < 3; ++j)
                     {
                         SetBaseTex((int)stars[i].point.X - 1 + j, (int)stars[i].point.Y - 1, c);
                         SetBaseTex((int)stars[i].point.X - 1 + j, (int)stars[i].point.Y + 1, c);
                     }
-                    index += WIDTH - 1;
 
                     for (int j = 0; j < 2; ++j)
                     {
@@ -315,12 +323,9 @@ namespace Celeste.Mod.IsaGrabBag
                 }
                 else if ((stars[i].depth == 0 && stars[i].anim >= 1) || (stars[i].depth == 1 && stars[i].anim % 2 >= 1))
                 {
-                    int index = ((int)stars[i].point.Y - 1) * WIDTH + (int)stars[i].point.X;
-
                     SetBaseTex((int)stars[i].point.X, (int)stars[i].point.Y - 1, c);
                     SetBaseTex((int)stars[i].point.X, (int)stars[i].point.Y + 1, c);
 
-                    index += WIDTH - 1;
                     for (int j = 0; j < 3; ++j)
                     {
                         SetBaseTex((int)stars[i].point.X + j - 1, (int)stars[i].point.Y, c);
@@ -364,8 +369,6 @@ namespace Celeste.Mod.IsaGrabBag
                     {
                         c = spinners[type][(u * SPRITE_MAIN) + v];
                         ++v;
-
-                        //Logger.Log("IsaBag", u.ToString() + ", " + v.ToString());
 
                         // if pixel is transparent, or pixel is the border where pixels are colored in, ignore (to prevent border showing up in the middle)
                         if (c == 0 || (c == 1 && colors[((y * WIDTH + x) << 2) + 3] != 0))
@@ -424,9 +427,6 @@ namespace Celeste.Mod.IsaGrabBag
                 }
 
             }
-            offset = 0;
-            if (!dreamdashEnabled)
-                offset = 18;
 
             texture.SetData(colors);
 
