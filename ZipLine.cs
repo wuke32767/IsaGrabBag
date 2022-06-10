@@ -144,6 +144,9 @@ namespace Celeste.Mod.IsaGrabBag
         {
             var self = GrabBagModule.playerInstance;
 
+            if (currentGrabbed == null)
+                return Player.StNormal;
+
             if (!currentGrabbed.grabbed)
                 return GrabBagModule.ZipLineState;
 

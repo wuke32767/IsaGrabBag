@@ -8,6 +8,7 @@ using Celeste.Mod;
 using System.Reflection;
 
 namespace Celeste.Mod.IsaGrabBag {
+	[Entities.CustomEntity("isaBag/cornerBlock")]
 	[Tracked(false)]
 	public class CornerBoostBlock : Solid {
 
@@ -95,7 +96,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
 					tiles = new TileGrid(8, 8, rectangle.Width, rectangle.Height);
 
-					var tex = GFX.Game["tilesets/isafriend/boost_block"];
+					var tex = GFX.Game["isafriend/tilesets/isafriend/boost_block"];
 
 					Vector2 texOffset = new Vector2(0.255127f, 0.4956055f);
 					Vector2 texSize = new Vector2(0.01164f, 0.0291f);

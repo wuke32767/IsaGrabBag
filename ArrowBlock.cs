@@ -50,7 +50,7 @@ namespace Celeste.Mod.IsaGrabBag
             int num = (int)(base.Width / 8f) - 1;
             int num2 = (int)(base.Height / 8f) - 1;
 
-            List<MTexture> atlasSubtextures = GFX.Game.GetAtlasSubtextures("objects/isafriend/arrowblock/block");
+            List<MTexture> atlasSubtextures = GFX.Game.GetAtlasSubtextures("isafriend/objects/arrowblock/block");
             MTexture idle;
 
             switch (limitation) {
@@ -71,7 +71,7 @@ namespace Celeste.Mod.IsaGrabBag
                     break;
             }
 
-            face = new Image(GFX.Game["objects/isafriend/arrowblock/idle_face"]);
+            face = new Image(GFX.Game["isafriend/objects/arrowblock/idle_face"]);
             face.CenterOrigin();
             face.Position = new Vector2(Width / 2, Height / 2);
 
@@ -209,46 +209,46 @@ namespace Celeste.Mod.IsaGrabBag
             if (borderX != 0 || borderY != 0) {
 
                 if (borderX < 0 && (limitation != ArrowDirection.diagonal && limitation != ArrowDirection.vertical)) {
-                    Image image2 = new Image(GFX.Game["objects/isafriend/arrowblock/lit_left"].GetSubtexture(0, ty * 8, 8, 8, null));
+                    Image image2 = new Image(GFX.Game["isafriend/objects/arrowblock/lit_left"].GetSubtexture(0, ty * 8, 8, 8, null));
                     activeLeftImages.Add(image2);
                     image2.Position = vector;
                     Add(image2);
                 }
                 else if (borderX > 0 && (limitation != ArrowDirection.diagonal && limitation != ArrowDirection.vertical)) {
-                    Image image3 = new Image(GFX.Game["objects/isafriend/arrowblock/lit_right"].GetSubtexture(0, ty * 8, 8, 8, null));
+                    Image image3 = new Image(GFX.Game["isafriend/objects/arrowblock/lit_right"].GetSubtexture(0, ty * 8, 8, 8, null));
                     activeRightImages.Add(image3);
                     image3.Position = vector;
                     Add(image3);
                 }
                 if (borderY < 0 && (limitation != ArrowDirection.diagonal && limitation != ArrowDirection.horizontal)) {
-                    Image image4 = new Image(GFX.Game["objects/isafriend/arrowblock/lit_top"].GetSubtexture(tx * 8, 0, 8, 8, null));
+                    Image image4 = new Image(GFX.Game["isafriend/objects/arrowblock/lit_top"].GetSubtexture(tx * 8, 0, 8, 8, null));
                     activeTopImages.Add(image4);
                     image4.Position = vector;
                     Add(image4);
                 }
                 if (borderY > 0 && (limitation != ArrowDirection.diagonal && limitation != ArrowDirection.horizontal)) {
-                    Image image5 = new Image(GFX.Game["objects/isafriend/arrowblock/lit_bottom"].GetSubtexture(tx * 8, 0, 8, 8, null));
+                    Image image5 = new Image(GFX.Game["isafriend/objects/arrowblock/lit_bottom"].GetSubtexture(tx * 8, 0, 8, 8, null));
                     activeBottomImages.Add(image5);
                     image5.Position = vector;
                     Add(image5);
                 }
                 if (borderX < 0 && borderY < 0) {
-                    topleftCorner = new Image(GFX.Game["objects/isafriend/arrowblock/lit_topleft"]);
+                    topleftCorner = new Image(GFX.Game["isafriend/objects/arrowblock/lit_topleft"]);
                     topleftCorner.Position = vector;
                     Add(topleftCorner);
                 }
                 if (borderX < 0 && borderY > 0) {
-                    bottomleftCorner = new Image(GFX.Game["objects/isafriend/arrowblock/lit_bottomleft"]);
+                    bottomleftCorner = new Image(GFX.Game["isafriend/objects/arrowblock/lit_bottomleft"]);
                     bottomleftCorner.Position = vector;
                     Add(bottomleftCorner);
                 }
                 if (borderX > 0 && borderY < 0) {
-                    toprightCorner = new Image(GFX.Game["objects/isafriend/arrowblock/lit_topright"]);
+                    toprightCorner = new Image(GFX.Game["isafriend/objects/arrowblock/lit_topright"]);
                     toprightCorner.Position = vector;
                     Add(toprightCorner);
                 }
                 if (borderX > 0 && borderY > 0) {
-                    bottomrightCorner = new Image(GFX.Game["objects/isafriend/arrowblock/lit_bottomright"]);
+                    bottomrightCorner = new Image(GFX.Game["isafriend/objects/arrowblock/lit_bottomright"]);
                     bottomrightCorner.Position = vector;
                     Add(bottomrightCorner);
                 }

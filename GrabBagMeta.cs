@@ -16,13 +16,15 @@ namespace Celeste.Mod.IsaGrabBag {
 		public static GrabBagMeta Default(AreaKey area) {
 			return new GrabBagMeta() {
 				WaterBoost = area.LevelSet.StartsWith("SpringCollab2020"),
-				RoundDreamSpinner = !area.LevelSet.StartsWith("SpringCollab2020"),
+				RoundDreamSpinner = false,
+				CorrectDemoDash = false,
 				ReplaceDashWith = "nothing",
 			};
 		}
 
 		public bool WaterBoost { get; set; }
 		public bool RoundDreamSpinner { get; set; }
+		public bool CorrectDemoDash { get; set; }
 		public string ReplaceDashWith { get; set; }
 	}
 }
