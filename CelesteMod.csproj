@@ -70,6 +70,14 @@
       <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Celeste_OpenGL\MMHOOK_Celeste.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="MonoMod.RuntimeDetour">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Celeste_OpenGL\MonoMod.RuntimeDetour.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="MonoMod.Utils">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Celeste_OpenGL\MonoMod.Utils.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="NLua">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Celeste\NLua.dll</HintPath>
       <Private>False</Private>

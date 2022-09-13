@@ -2,6 +2,10 @@
 using Monocle;
 using System.Reflection;
 using System.Collections.Generic;
+using System;
+using MonoMod.Cil;
+using MonoMod.RuntimeDetour;
+using MonoMod.Utils;
 
 
 namespace Celeste.Mod.IsaGrabBag {
@@ -32,13 +36,56 @@ namespace Celeste.Mod.IsaGrabBag {
 
 	public static class ForceVariants {
 
+
+		static bool[] Variants_Default { get; set; } = new bool[] { false, false, false, false, false, false, false, false, false, false, false };
+		static bool?[] Variants { get; set; } = new bool?[] { null, null, null, null, null, null, null, null, null, null, null };
+
+		static Dictionary<TextMenu.Item, int> itemList = new Dictionary<TextMenu.Item, int>();
+
+		static Hook enableHook, disableHook, aPressHook;
+
+		static TextMenu variantMenu;
+
 		public static void Unload() {
 			On.Celeste.Level.AssistMode -= Level_AssistMode;
 			On.Celeste.Level.VariantMode -= Level_VariantMode;
+
+			On.Celeste.TextMenu.Close -= TextMenu_Close;
+			enableHook?.Dispose();
+			disableHook?.Dispose();
+			aPressHook?.Dispose();
 		}
 		public static void Load() {
 			On.Celeste.Level.AssistMode += Level_AssistMode;
 			On.Celeste.Level.VariantMode += Level_VariantMode;
+
+			disableHook = new Hook(
+				typeof(TextMenu.Option<bool>).GetMethod("LeftPressed", BindingFlags.Instance | BindingFlags.Public), 
+				(Action<OptionChanged, TextMenu.Option<bool>>)OnChange);
+
+			enableHook = new Hook(
+				typeof(TextMenu.Option<bool>).GetMethod("RightPressed", BindingFlags.Instance | BindingFlags.Public), 
+				(Action<OptionChanged, TextMenu.Option<bool>>)OnChange);
+
+			aPressHook = new Hook(
+				typeof(TextMenu.Option<bool>).GetMethod("ConfirmPressed", BindingFlags.Instance | BindingFlags.Public),
+				(Action<OptionChanged, TextMenu.Option<bool>>)OnChange);
+		}
+
+		delegate void OptionChanged(TextMenu.Option<bool> self);
+		private static void OnChange(OptionChanged orig, TextMenu.Option<bool> self) {
+			orig(self);
+
+			if (itemList.ContainsKey(self)) {
+
+				bool value = self.Index >= 1;
+
+				int index = itemList[self];
+
+				Variants_Default[index] = value;
+
+			}
+
 		}
 
 
@@ -51,7 +98,6 @@ namespace Celeste.Mod.IsaGrabBag {
 			
 
 		}
-
 		private static void Level_AssistMode(On.Celeste.Level.orig_AssistMode orig, Level self, int returnIndex, bool minimal) {
 
 			orig(self, returnIndex, minimal);
@@ -76,9 +122,13 @@ namespace Celeste.Mod.IsaGrabBag {
 
 		private static void OnVariantMenu(TextMenu menu, bool assist) {
 
+			variantMenu = menu;
+
 			var session = GrabBagModule.Session;
 
-			//Logger.Log("IsaGrabBag", $"Starting {(assist ? "Assist" : "Variant")} Menu of size {menu.Items.Count}");
+			itemList = new Dictionary<TextMenu.Item, int>();
+
+			On.Celeste.TextMenu.Close += TextMenu_Close;
 
 			int index = assist ? 8 : 0;
 			for (int i = 0; i < menu.Items.Count; ++i) {
@@ -90,47 +140,73 @@ namespace Celeste.Mod.IsaGrabBag {
 
 				Variant v = menuLayout[index++];
 
-				//Logger.Log("IsaGrabBag", $"Looking at {v}");
+				itemList.Add(item, (int)v);
 
-				if (session.Variants[(int)v] != null) {
+				if (Variants[(int)v] != null) {
 					item.Disabled = true;
 				}
 			}
 		}
 
+
+		private static void TextMenu_Close(On.Celeste.TextMenu.orig_Close orig, TextMenu self) {
+			orig(self);
+			if (variantMenu != self)
+				return;
+
+			On.Celeste.TextMenu.Close -= TextMenu_Close;
+		}
+
+		public static void GetDefaults() {
+
+			for (int i = 0; i < Variants_Default.Length; i++) {
+				Variants_Default[i] = GetVariantStatus((Variant)i);
+			}
+			WallToggleData.GetDefaults();
+		}
 		public static void SaveToSession() {
 
 			var session = GrabBagModule.Session;
 
-			for (int i = 0; i < session.Variants.Length; i++) {
-				session.Variants_Save[i] = session.Variants[i];
+			for (int i = 0; i < Variants.Length; i++) {
+				session.Variants_Save[i] = Variants[i];
 			}
+			WallToggleData.SaveToSession();
 		}
 		public static void GetFromSession() {
 
 			var session = GrabBagModule.Session;
 
-			for (int i = 0; i < session.Variants.Length; i++) {
-				session.Variants[i] = session.Variants_Save[i];
+			for (int i = 0; i < Variants.Length; i++) {
+				if (Variants[i] != null && session.Variants_Save[i] == null) {
+					SetVariant(i, VariantState.SetToDefault);
+				}
+				Variants[i] = session.Variants_Save[i];
 			}
+
+			WallToggleData.ResetSession();
 		}
 		public static void ReinforceSession() {
+			var session = GrabBagModule.Session;
+
 			for (int i = 0; i < 11; i++) {
-				if (GrabBagModule.Session.Variants[i] == null)
+				Variants[i] = session.Variants_Save[i];
+
+				if (session.Variants_Save[i] == null)
 					continue;
 
-				SetVariant(i, GrabBagModule.Session.Variants[i].Value ? VariantState.EnabledPermanent : VariantState.DisabledPermanent);
+				SetVariant(i, session.Variants_Save[i].Value ? VariantState.EnabledPermanent : VariantState.DisabledPermanent);
 			}
+
+			WallToggleData.ReinforceSession();
 		}
 		public static void ResetSession() {	
 
-			var session = GrabBagModule.Session;
-
-			for (int i = 0; i < session.Variants.Length; i++) {
-				//Logger.Log("IsaGrabBag", session.Variants[i] == null ? "null" : session.Variants[i].ToString());
-				if (session.Variants[i] != null)
-					SetVariant(i, session.Variants_Default[i] ? VariantState.Enabled : VariantState.Disabled);
+			for (int i = 0; i < Variants_Default.Length; i++) {
+				SetVariant(i, VariantState.SetToDefault);
 			}
+
+			WallToggleData.ResetSession();
 		}
 
 		public static void SetVariant(int variant, VariantState state) {
@@ -143,9 +219,8 @@ namespace Celeste.Mod.IsaGrabBag {
 
 				var session = GrabBagModule.Session;
 
-				SetVariantInGame(variant, session.Variants_Default[(int)variant]);
-
-				session.Variants[(int)variant] = null;
+				Variants[(int)variant] = null;
+				SetVariantInGame(variant, Variants_Default[(int)variant]);
 
 				return;
 			}
@@ -158,7 +233,7 @@ namespace Celeste.Mod.IsaGrabBag {
 			if (permanent) {
 				var session = GrabBagModule.Session;
 
-				session.Variants[(int)variant] = value;
+				Variants[(int)variant] = value;
 			}
 		}
 
@@ -188,6 +263,10 @@ namespace Celeste.Mod.IsaGrabBag {
 					return SaveData.Instance.Assists.DashAssist;
 			}
 			return false;
+		}
+		public static bool? GetVariantModdedValue(Variant variant) {
+
+			return Variants[(int)variant];
 		}
 
 		private static void SetVariantInGame(Variant variant, bool value) {
@@ -247,19 +326,35 @@ namespace Celeste.Mod.IsaGrabBag {
 		public Variant variant;
 		public VariantState enable;
 
-		private bool? previous;
+		private bool previous;
 
 		public ForceVariantTrigger(EntityData data, Vector2 offset) : base(data, offset)
 		{
 			variant = data.Enum("variantChange", Variant.Hiccups);
 			enable = data.Enum("enableStyle", VariantState.Enabled);
+
+			if (data.Has("enforceValue")) {
+				bool enforce = data.Bool("enforceValue");
+				if (enable == VariantState.Enabled) {
+					enable = VariantState.EnabledTemporary;
+				}
+				else if (enable == VariantState.Disabled) {
+					enable = VariantState.DisabledTemporary;
+				}
+				else if (enable == VariantState.EnabledPermanent && !enforce) {
+					enable = VariantState.Enabled;
+				}
+				else if (enable == VariantState.DisabledPermanent) {
+					enable = VariantState.Disabled;
+				}
+			}
 		}
 
 		public override void OnEnter(Player player)
 		{
 			base.OnEnter(player);
 
-			previous = GrabBagModule.Session.Variants[(int)variant];
+			previous = ForceVariants.GetVariantStatus(variant);
 			ForceVariants.SetVariant(variant, enable);
 
 		}
@@ -271,7 +366,7 @@ namespace Celeste.Mod.IsaGrabBag {
 			{
 				case VariantState.DisabledTemporary:
 				case VariantState.EnabledTemporary:
-					ForceVariants.SetVariant(variant, previous.Value ? VariantState.Enabled : VariantState.Disabled);
+					ForceVariants.SetVariant(variant, previous ? VariantState.Enabled : VariantState.Disabled);
 					break;
 			}
 		}

@@ -39,7 +39,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
 		private static int Player_RedDashUpdate(On.Celeste.Player.orig_RedDashUpdate orig, Player self) {
 
-			if (self.CanDash) {
+			if (self.CanDash && self.LastBooster != null) {
 				respawnTimer.SetValue(self.LastBooster, 1);
 				cannotUseTimer.SetValue(self.LastBooster, 0);
 			}

@@ -131,10 +131,7 @@ namespace Celeste.Mod.IsaGrabBag
 		{
 			orig(self, player);
 
-			for (int i = 0; i < Session.Variants.Length; i++)
-			{
-				Session.Variants_Save[i] = Session.Variants[i];
-			}
+			ForceVariants.SaveToSession();
 		}
 
 		private void PlayerInit(On.Celeste.Player.orig_ctor orig, Player self, Vector2 position, PlayerSpriteMode spriteMode)
@@ -200,8 +197,6 @@ namespace Celeste.Mod.IsaGrabBag
 		{
 			gbMeta = null;
 
-			
-
 			ForceVariants.ResetSession();
 
 			if (BadelineFollower.instance != null)
@@ -213,14 +208,17 @@ namespace Celeste.Mod.IsaGrabBag
 		private void Level_OnEnter(Session session, bool fromSaveData) {
 			try {
 				GrabBagWrapperMeta parsed;
-				//string s = session.Area.GetSID();
+				gbMeta = null;
 
-				if (Everest.Content.Get(session.Area.SID).TryGetMeta(out parsed)) {
-					gbMeta = parsed.IsaGrabBag;
+				//string s = session.Area.GetSID();
+				if (session != null && session.Area != null && session.Area.SID != null) {
+
+					var get = Everest.Content.Get(session.Area.SID);
+					if (get != null && get.TryGetMeta(out parsed)) {
+						gbMeta = parsed.IsaGrabBag;
+					}
 				}
-				else {
-					gbMeta = null;
-				}
+
 			}
 			catch (Exception e) {
 				Logger.Log("IsaGrabBag", "Unable to properly get metadata");
@@ -234,11 +232,7 @@ namespace Celeste.Mod.IsaGrabBag
 				GrabBagMeta.WaterBoost = true;
 			}
 
-
-			for (int i = 0; i < Session.Variants.Length; i++)
-			{
-				Session.Variants_Default[i] = ForceVariants.GetVariantStatus((Variant)i);
-			}
+			ForceVariants.GetDefaults();
 			ForceVariants.ReinforceSession();
 
 		}

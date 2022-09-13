@@ -96,7 +96,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
 					tiles = new TileGrid(8, 8, rectangle.Width, rectangle.Height);
 
-					var tex = GFX.Game["isafriend/tilesets/isafriend/boost_block"];
+					var tex = GFX.Game["isafriend/tilesets/boost_block"];
 
 					Vector2 texOffset = new Vector2(0.255127f, 0.4956055f);
 					Vector2 texSize = new Vector2(0.01164f, 0.0291f);
@@ -222,7 +222,7 @@ namespace Celeste.Mod.IsaGrabBag {
 		private static void OnClimbJumped(On.Celeste.Player.orig_ClimbJump orig, Player self) {
 			orig(self);
 
-			if (self.Scene.CollideCheck<CornerBoostBlock>(GetFacingHitbox(self)) && Math.Abs(self.Speed.X) <= 51f && (float)retentionTimer.GetValue(self) > 0 && (float)retentionSpeed.GetValue(self) != 0) {
+			if (self.Scene.CollideCheck<CornerBoostBlock>(GetFacingHitbox(self)) && (float)retentionTimer.GetValue(self) > 0 && (float)retentionSpeed.GetValue(self) != 0) {
 
 				retentionTimer.SetValue(self, Math.Max((float)retentionTimer.GetValue(self), 0.06f));
 
