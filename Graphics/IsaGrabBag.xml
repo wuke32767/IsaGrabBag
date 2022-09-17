@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Sprites>
+
+  <zipline path="isafriend/objects/zipline/" start="idle">
+    <Origin x="3" y="3"/>
+    <Loop id="idle" path="handle" delay="0.08"/>
+    <Loop id="held_l" path="handle_l" delay="0.08"/>
+    <Loop id="held_r" path="handle_r" delay="0.08"/>
+  </zipline>
+
+  <booster_down path="isafriend/objects/booster/boosterdown" start="idle">
+    <Origin x="16" y="16"/>
+	
+    <Loop id="idle" path="" delay="0.1" frames="0-4"/>
+    <Loop id="appear" path="" delay="0.08" frames="0-4"/>
+    <Loop id="loop" path="" delay="0.1" frames="0-4"/>
+    <Loop id="inside" path="" delay="0.1" frames="5-8"/>
+    <Loop id="spin" path="" delay="0.06" frames="18-25"/>
+    <Anim id="pop" path="" delay="0.08" frames="9-17"/>
+  </booster_down>
+  
+  <booster_up path="isafriend/objects/booster/boosterup" start="idle">
+    <Origin x="16" y="16"/>
+	
+    <Loop id="idle" path="" delay="0.1" frames="0-4"/>
+    <Loop id="appear" path="" delay="0.08" frames="0-4"/>
+    <Loop id="loop" path="" delay="0.1" frames="0-4"/>
+    <Loop id="inside" path="" delay="0.1" frames="5-8"/>
+    <Loop id="spin" path="" delay="0.06" frames="18-25"/>
+    <Anim id="pop" path="" delay="0.08" frames="9-17"/>
+  </booster_up>
+  
+  <booster_left path="isafriend/objects/booster/boosterleft" start="idle">
+    <Origin x="16" y="16"/>
+	
+    <Loop id="idle" path="" delay="0.1" frames="0-4"/>
+    <Loop id="appear" path="" delay="0.08" frames="0-4"/>
+    <Loop id="loop" path="" delay="0.1" frames="0-4"/>
+    <Loop id="inside" path="" delay="0.1" frames="5-8"/>
+    <Loop id="spin" path="" delay="0.06" frames="18-25"/>
+    <Anim id="pop" path="" delay="0.08" frames="9-17"/>
+  </booster_left>
+  
+  <booster_right path="isafriend/objects/booster/boosterright" start="idle">
+    <Origin x="16" y="16"/>
+	
+    <Loop id="idle" path="" delay="0.1" frames="0-4"/>
+    <Loop id="appear" path="" delay="0.08" frames="0-4"/>
+    <Loop id="loop" path="" delay="0.1" frames="0-4"/>
+    <Loop id="inside" path="" delay="0.1" frames="5-8"/>
+    <Loop id="spin" path="" delay="0.06" frames="18-25"/>
+    <Anim id="pop" path="" delay="0.08" frames="9-17"/>
+  </booster_right>
+  
+  <rewind_crystal path="isafriend/objects/rewind/" start="idle">
+    <Origin x="8" y="8"/>
+    <Anim id="idle" path="idle" delay="0.25" frames="0-4" goto="idle:8,glitch:2,shine:1"/>
+    <Anim id="glitch" path="glitch" delay="0.1" frames="0-3" goto="idle"/>
+    <Anim id="shine" path="shine" delay="0.15" frames="0-2" goto="idle"/>
+  </rewind_crystal>
+  
+  <pause_crystal path="isafriend/objects/pause/" start="idle">
+    <Origin x="8" y="8"/>
+    <Loop id="idle" path="idle" delay="0.25" frames="0-4"/>
+  </pause_crystal>
+
+</Sprites>
