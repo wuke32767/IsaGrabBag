@@ -1,7 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Monocle;
 using System.Collections.Generic;
-using Celeste.Mod.OutbackHelper;
 using System.Reflection;
 using System;
 
