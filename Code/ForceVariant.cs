@@ -344,7 +344,7 @@ namespace Celeste.Mod.IsaGrabBag {
 				else if (enable == VariantState.EnabledPermanent && !enforce) {
 					enable = VariantState.Enabled;
 				}
-				else if (enable == VariantState.DisabledPermanent) {
+				else if (enable == VariantState.DisabledPermanent && !enforce) {
 					enable = VariantState.Disabled;
 				}
 			}
