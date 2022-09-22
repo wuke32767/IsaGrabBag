@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.RuntimeDetour;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -46,7 +47,6 @@ namespace Celeste.Mod.IsaGrabBag {
         };
 
         private static Dictionary<TextMenu.Item, int> itemList = new();
-        private delegate void OptionChanged(TextMenu.Option<bool> self);
         private static Hook enableHook, disableHook, aPressHook;
         private static TextMenu variantMenu;
 
@@ -165,7 +165,7 @@ namespace Celeste.Mod.IsaGrabBag {
             };
         }
 
-        private static void OnChange(OptionChanged orig, TextMenu.Option<bool> self) {
+        private static void OnChange(Action<TextMenu.Option<bool>> orig, TextMenu.Option<bool> self) {
             orig(self);
 
             if (itemList.ContainsKey(self)) {
