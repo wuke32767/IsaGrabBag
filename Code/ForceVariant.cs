@@ -57,17 +57,18 @@ namespace Celeste.Mod.IsaGrabBag {
             On.Celeste.Level.AssistMode += Level_AssistMode;
             On.Celeste.Level.VariantMode += Level_VariantMode;
 
+            Delegate optionChanged = new Action<Action<TextMenu.Option<bool>>, TextMenu.Option<bool>>(OnChange);
             disableHook = new Hook(
                 typeof(TextMenu.Option<bool>).GetMethod("LeftPressed", BindingFlags.Instance | BindingFlags.Public),
-                OnChange);
+                optionChanged);
 
             enableHook = new Hook(
                 typeof(TextMenu.Option<bool>).GetMethod("RightPressed", BindingFlags.Instance | BindingFlags.Public),
-                OnChange);
+                optionChanged);
 
             aPressHook = new Hook(
                 typeof(TextMenu.Option<bool>).GetMethod("ConfirmPressed", BindingFlags.Instance | BindingFlags.Public),
-                OnChange);
+                optionChanged);
         }
 
         public static void Unload() {
