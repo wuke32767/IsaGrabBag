@@ -26,7 +26,6 @@
     <ItemGroup>
         <Reference Include="$(CelestePrefix)\Celeste.exe" />
         <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll" />
-        <Reference Include="$(CelestePrefix)\YamlDotNet.dll" />
     </ItemGroup>
 
     <Choose>

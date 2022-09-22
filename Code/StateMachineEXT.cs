@@ -3,16 +3,18 @@ using System;
 using System.Collections;
 using System.Reflection;
 
-namespace Celeste.Mod.IsaGrabBag
-{
-    internal static class StateMachineExt
-    {
+namespace Celeste.Mod.IsaGrabBag {
+    internal static class StateMachineExt {
+        private static readonly FieldInfo StateMachine_begins = typeof(StateMachine).GetField("begins", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo StateMachine_updates = typeof(StateMachine).GetField("updates", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo StateMachine_ends = typeof(StateMachine).GetField("ends", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo StateMachine_coroutines = typeof(StateMachine).GetField("coroutines", BindingFlags.Instance | BindingFlags.NonPublic);
+
         /// <summary>
         /// Adds a state to a StateMachine.  Ripped straight from JaThePlayer lol
         /// </summary>
         /// <returns>The index of the new state</returns>
-        public static int AddState(this StateMachine machine, Func<int> onUpdate, Func<IEnumerator> coroutine = null, Action begin = null, Action end = null)
-        {
+        public static int AddState(this StateMachine machine, Func<int> onUpdate, Func<IEnumerator> coroutine = null, Action begin = null, Action end = null) {
             Action[] begins = (Action[])StateMachine_begins.GetValue(machine);
             Func<int>[] updates = (Func<int>[])StateMachine_updates.GetValue(machine);
             Action[] ends = (Action[])StateMachine_ends.GetValue(machine);
@@ -32,9 +34,5 @@ namespace Celeste.Mod.IsaGrabBag
             machine.SetCallbacks(nextIndex, onUpdate, coroutine, begin, end);
             return nextIndex;
         }
-        private static FieldInfo StateMachine_begins = typeof(StateMachine).GetField("begins", BindingFlags.Instance | BindingFlags.NonPublic);
-        private static FieldInfo StateMachine_updates = typeof(StateMachine).GetField("updates", BindingFlags.Instance | BindingFlags.NonPublic);
-        private static FieldInfo StateMachine_ends = typeof(StateMachine).GetField("ends", BindingFlags.Instance | BindingFlags.NonPublic);
-        private static FieldInfo StateMachine_coroutines = typeof(StateMachine).GetField("coroutines", BindingFlags.Instance | BindingFlags.NonPublic);
     }
 }

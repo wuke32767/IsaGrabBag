@@ -1,106 +1,95 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Reflection;
+﻿using Celeste.Mod.Entities;
 using Microsoft.Xna.Framework;
 using Monocle;
+using MonoMod.Utils;
 
 namespace Celeste.Mod.IsaGrabBag {
-	public class ArrowBubble : Booster {
+    [CustomEntity("isaBag/arrowBubble")]
+    public class ArrowBubble : Booster {
+        public Vector2 gravityDirection;
+        private readonly Sprite sprite;
+        private static Vector2 GravityDir;
 
-		static Vector2 GravityDir;
-		static FieldInfo sprite = typeof(Booster).GetField("sprite", BindingFlags.NonPublic | BindingFlags.Instance),
-			cannotUseTimer = typeof(Booster).GetField("cannotUseTimer", BindingFlags.NonPublic | BindingFlags.Instance),
-			respawnTimer = typeof(Booster).GetField("respawnTimer", BindingFlags.NonPublic | BindingFlags.Instance);
+        public ArrowBubble(EntityData data, Vector2 offset) 
+            : base(data.Position + offset, true) {
+            string dir = data.Attr("direction", "down");
 
-		private Sprite sprites;
+            Add(new PlayerCollider(OnPlayer));
 
-		public static void Load() {
+            switch (dir) {
+                default:
+                    dir = "down";
+                    gravityDirection = Vector2.UnitY;
+                    break;
+                case "up":
+                    gravityDirection = -Vector2.UnitY;
+                    break;
+                case "left":
+                    gravityDirection = -Vector2.UnitX;
+                    break;
+                case "right":
+                    gravityDirection = Vector2.UnitX;
+                    break;
+            }
 
-			On.Celeste.Player.RedDashEnd += Player_RedDashEnd;
-			On.Celeste.Player.RedDashUpdate += Player_RedDashUpdate;
-		}
+            DynamicData baseData = new(typeof(Booster), this);
+            sprite = baseData.Get<Sprite>("sprite");
+            Remove(sprite);
+            Add(sprite = GrabBagModule.sprites.Create($"booster_{dir}"));
+        }
 
-		public static void Unload() {
-			
-			On.Celeste.Player.RedDashEnd -= Player_RedDashEnd;
-			On.Celeste.Player.RedDashUpdate -= Player_RedDashUpdate;
-		}
+        public static void Load() {
+            On.Celeste.Player.RedDashEnd += Player_RedDashEnd;
+            On.Celeste.Player.RedDashUpdate += Player_RedDashUpdate;
+        }
 
-		private static void Player_RedDashEnd(On.Celeste.Player.orig_RedDashEnd orig, Player self) {
-			orig(self);
-			if (GravityDir != Vector2.Zero) {
-				self.UseRefill(false);
-			}
-			GravityDir = Vector2.Zero;
-		}
+        public static void Unload() {
+            On.Celeste.Player.RedDashEnd -= Player_RedDashEnd;
+            On.Celeste.Player.RedDashUpdate -= Player_RedDashUpdate;
+        }
 
-		private static int Player_RedDashUpdate(On.Celeste.Player.orig_RedDashUpdate orig, Player self) {
+        private static void Player_RedDashEnd(On.Celeste.Player.orig_RedDashEnd orig, Player self) {
+            orig(self);
+            if (GravityDir != Vector2.Zero) {
+                GravityDir = Vector2.Zero;
+                self.UseRefill(twoDashes: false);
+            }
+        }
 
-			if (self.CanDash && self.LastBooster != null) {
-				respawnTimer.SetValue(self.LastBooster, 1);
-				cannotUseTimer.SetValue(self.LastBooster, 0);
-			}
+        private static int Player_RedDashUpdate(On.Celeste.Player.orig_RedDashUpdate orig, Player self) {
+            if (self.CanDash && self.LastBooster != null) {
+                DynamicData boosterData = DynamicData.For(self.LastBooster);
+                boosterData.Set("respawnTimer", 1f);
+                boosterData.Set("cannotUseTimer", 0f);
+            }
 
-			int value = orig(self);
+            int value = orig(self);
+            if (GravityDir != Vector2.Zero) {
+                float approachSpeed = 350 * Engine.DeltaTime;
 
-			if (GravityDir != Vector2.Zero) {
+                void changeValue(ref float val, float dir) {
+                    val = Calc.Approach(val, (val * dir) >= 0 ? (360 * dir) : 0, approachSpeed);
+                }
 
-				float approachSpeed = 350 * Engine.DeltaTime;
+                if (GravityDir.X != 0) {
+                    changeValue(ref self.Speed.X, GravityDir.X);
+                }
 
-				void changeValue(ref float val, float dir) {
-					val = Calc.Approach(val, (val * dir) >= 0 ? (360 * dir) : 0, approachSpeed);
-				}
+                if (GravityDir.Y != 0) {
+                    changeValue(ref self.Speed.Y, GravityDir.Y);
+                }
 
-				if (GravityDir.X != 0)
-					changeValue(ref self.Speed.X, GravityDir.X);
-				if (GravityDir.Y != 0)
-					changeValue(ref self.Speed.Y, GravityDir.Y);
+                self.DashDir = self.Speed.SafeNormalize();
+            }
 
-				self.DashDir = self.Speed.SafeNormalize();
-			}
+            return value;
+        }        
 
-			return value;
-		}
-
-		public Vector2 gravityDirection;
-
-		public ArrowBubble(EntityData data, Vector2 offset) : base(data.Position + offset, true) {
-
-			string dir = data.Attr("direction", "down");
-
-			Add(new PlayerCollider(OnPlayer));
-
-			switch (dir) {
-				default:
-					dir = "down";
-					gravityDirection = Vector2.UnitY;
-					break;
-				case "up":
-					gravityDirection = -Vector2.UnitY;
-					break;
-				case "left":
-					gravityDirection = -Vector2.UnitX;
-					break;
-				case "right":
-					gravityDirection = Vector2.UnitX;
-					break;
-			}
-
-			Remove(Get<Sprite>());
-
-			sprites = GrabBagModule.sprites.Create($"booster_{dir}");
-			Add(sprites);
-			sprite.SetValue(this, sprites);
-		}
-
-		void OnPlayer(Player player) {
-			if (player.StateMachine != Player.StRedDash) {
-				GravityDir = gravityDirection;
-			}
-			sprites.FlipX = false;
-		}
-	}
+        private void OnPlayer(Player player) {
+            sprite.FlipX = false;
+            if (player.StateMachine != Player.StRedDash) {
+                GravityDir = gravityDirection;
+            }
+        }
+    }
 }

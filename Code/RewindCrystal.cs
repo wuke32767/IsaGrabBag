@@ -1,408 +1,376 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Monocle;
+﻿using Celeste.Mod.Entities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Monocle;
+using System;
 using System.Collections;
 
 namespace Celeste.Mod.IsaGrabBag {
-	struct CharacterState {
-		public Vector2 pos, scale;
-		public Facings facing;
-		public int dashCount;
-		public Color hairColor;
-		public Vector2[] hairPosition;
-		public MTexture texture;
+    [CustomEntity("isaBag/rewindCrystal")]
+    public class RewindCrystal : Entity {
+        private const float RewindCount = 3.5f;
+        private const int rewindFrames = (int)(RewindCount * 60);
+
+        private static readonly CharacterState[] states = new CharacterState[rewindFrames];
+        private readonly bool oneUse = false;
+        private static float RenderStrength;
+        private static int currentFrame;
+        private static int maxRewind;
+        private static RenderTarget2D playerTarget;
+        private static Effect glitchEffect;
+
+        private readonly Sprite visuals;
+        private readonly Image outline;
+        private Level level;
+
+        public RewindCrystal(Vector2 position) 
+            : base(position) {
+            visuals = GrabBagModule.sprites.Create("rewind_crystal");
+            outline = new Image(GFX.Game["isafriend/objects/rewind/outline00"]) {
+                Position = new Vector2(-8, -8),
+                Visible = false
+            };
+
+            Collider = new Hitbox(16, 16, -8, -8);
+
+            Add(visuals);
+            Add(new PlayerCollider(OnPlayer));
+            Add(outline);
 
-		public Vector2 velocity;
+            Depth = 1500;
+        }
 
-		public CharacterState(Player player) {
-			pos = player.Position;
-			scale = player.Sprite.Scale;
-			facing = player.Facing;
+        public RewindCrystal(EntityData data, Vector2 offset) 
+            : this(data.Position + offset) { 
+        }
 
-			texture = player.Sprite.Texture;
+        public static bool Rewinding { get; internal set; } = false;
 
-			dashCount = player.Dashes;
-			
-			velocity = player.Speed;
+        public static void ClearRewindBuffer() {
+            currentFrame = 0;
+            maxRewind = 0;
+            states[states.Length - 1] = new CharacterState();
+        }
 
-			var hair = player.Hair;
-			hairColor = hair.Color;
-			hairPosition = new Vector2[10];
+        public static void Load() {
+            On.Celeste.PlayerCollider.Check += PlayerCollider_Check;
+            On.Celeste.Player.Update += Player_Update;
+            On.Celeste.Player.Render += Player_Render;
+            Everest.Events.Level.OnLoadLevel += Level_OnLoadLevel;
+            On.Celeste.Mod.UI.SubHudRenderer.Render += SubHudRenderer_Render;
+        }
 
-			for (int i = 0; i < Math.Min(hair.Nodes.Count, hairPosition.Length); ++i) {
-				hairPosition[i] = hair.Nodes[i];
-			}
-		}
+        public static void Unload() {
+            On.Celeste.PlayerCollider.Check -= PlayerCollider_Check;
+            On.Celeste.Player.Update -= Player_Update;
+            On.Celeste.Player.Render -= Player_Render;
+            Everest.Events.Level.OnLoadLevel -= Level_OnLoadLevel;
+            On.Celeste.Mod.UI.SubHudRenderer.Render -= SubHudRenderer_Render;
+        }
 
-		public void SetOnPlayer(Player player) {
-			player.NaiveMove(pos - player.Position);
-			player.Sprite.Scale = scale;
-			player.Facing = facing;
-			player.Dashes = dashCount;
+        public static void LoadGraphics() {
+            playerTarget = new RenderTarget2D(Draw.SpriteBatch.GraphicsDevice, 64, 64);
 
-			player.Sprite.Texture = texture;
+            try {
+                ModAsset asset = Everest.Content.Get("Effects/glitchy_effect.cso");
+                glitchEffect = new Effect(Draw.SpriteBatch.GraphicsDevice, asset.Data);
+            } catch (Exception e) {
+                Logger.Log(LogLevel.Error, "IsaGrabBag", "Failed to load the shader");
+                Logger.LogDetailed(e);
+            }
+        }
 
-			if (hairPosition == null)
-				return;
+        public override void Added(Scene scene) {
+            base.Added(scene);
+            level = SceneAs<Level>();
+        }
 
-			for (int i = 0; i < Math.Min(player.Hair.Nodes.Count, hairPosition.Length); ++i) {
-				player.Hair.Nodes[i] = hairPosition[i];
-			}
-		}
-		public void SetOnPlayerFinal(Player player) {
-			SetOnPlayer(player);
-			player.Speed = velocity;
-		}
-	}
-	public class RewindCrystal : Entity {
+        private static void Player_Render(On.Celeste.Player.orig_Render orig, Player self) {
+            if (RenderStrength > 0) {
+                GameplayRenderer.End();
 
-		private const float RewindCount = 3.5f;
-		private const int rewindFrames = (int)(RewindCount * 60);
+                Draw.SpriteBatch.GraphicsDevice.SetRenderTarget(playerTarget);
+                Draw.SpriteBatch.GraphicsDevice.Clear(Color.Transparent);
 
-		private static CharacterState[] states = new CharacterState[rewindFrames];
+                Matrix m = Matrix.CreateTranslation(-(self.X - 32), -(self.Y - 32), 0);
 
-		public static bool Rewinding { get; internal set; } = false;
+                Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, m);
 
-		private static float RenderStrength;
+                orig(self);
 
-		private static int currentFrame;
-		private static int maxRewind;
+                Draw.SpriteBatch.End();
 
-		private static RenderTarget2D playerTarget;
+                Draw.SpriteBatch.GraphicsDevice.SetRenderTarget(GameplayBuffers.Gameplay);
+                GameplayRenderer.Begin();
+            } else {
+                orig(self);
 
-		private static Effect glitchEffect;
+            }
+        }
 
-		public static void ClearRewindBuffer() {
-			currentFrame = 0;
-			maxRewind = 0;
-			states[states.Length - 1] = new CharacterState();
-		}
+        private static void SubHudRenderer_Render(On.Celeste.Mod.UI.SubHudRenderer.orig_Render orig, UI.SubHudRenderer self, Scene scene) {
+            if (MInput.Keyboard.Pressed(Microsoft.Xna.Framework.Input.Keys.Q)) {
+                LoadGraphics();
+            }
 
-		public static void Load() {
+            if (scene is Level && RenderStrength > 0) {
+                Level level = scene as Level;
 
-			On.Celeste.PlayerCollider.Check += PlayerCollider_Check;
-			On.Celeste.Player.Update += Player_Update;
-			On.Celeste.Player.Render += Player_Render;
-			Everest.Events.Level.OnLoadLevel += Level_OnLoadLevel;
-			On.Celeste.Mod.UI.SubHudRenderer.Render += SubHudRenderer_Render;
-		}
+                Entity e = level.Entities.FindFirst<Player>();
 
-		public static void Unload() {
+                if (e == null) {
+                    orig(self, scene);
+                    return;
+                }
 
-			On.Celeste.PlayerCollider.Check -= PlayerCollider_Check;
-			On.Celeste.Player.Update -= Player_Update;
-			On.Celeste.Player.Render -= Player_Render;
-			Everest.Events.Level.OnLoadLevel -= Level_OnLoadLevel;
-			On.Celeste.Mod.UI.SubHudRenderer.Render -= SubHudRenderer_Render;
-		}
+                float scale = Math.Min(Engine.ViewWidth / 320.0f, Engine.ViewHeight / 180.0f);
 
-		public static void LoadGraphics() {
-			playerTarget = new RenderTarget2D(Draw.SpriteBatch.GraphicsDevice, 64, 64);
+                Vector2 p = e.Position;
 
-			try {
+                Matrix m = Matrix.CreateTranslation(p.X - 32, p.Y - 32, 0) * level.Camera.Matrix * Matrix.CreateScale(scale);
 
-				var asset = Everest.Content.Get("Effects/glitchy_effect.cso");
-				glitchEffect = new Effect(Draw.SpriteBatch.GraphicsDevice, asset.Data);
-			}
-			catch { }
-		}
+                if (RenderStrength > 0.1) {
 
+                    glitchEffect.Parameters["time"].SetValue(scene.RawTimeActive);
+                    glitchEffect.Parameters["strength"].SetValue(1);
 
-		private static void Player_Render(On.Celeste.Player.orig_Render orig, Player self) {
-			if (RenderStrength > 0) {
+                    Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, glitchEffect, m);
 
-				GameplayRenderer.End();
+                } else {
 
-				Draw.SpriteBatch.GraphicsDevice.SetRenderTarget(playerTarget);
-				Draw.SpriteBatch.GraphicsDevice.Clear(Color.Transparent);
+                    ColorGrade.Set(GFX.ColorGrades["isagrabbag/rewind_flash"]);
 
-				Matrix m = Matrix.CreateTranslation(-(self.X - 32), -(self.Y - 32), 0);
+                    Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, ColorGrade.Effect, m);
 
-				Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, m);
+                }
 
-				orig(self);
+                Draw.SpriteBatch.Draw(playerTarget, Vector2.Zero, Color.White);
 
-				Draw.SpriteBatch.End();
+                Draw.SpriteBatch.End();
+            }
 
-				Draw.SpriteBatch.GraphicsDevice.SetRenderTarget(GameplayBuffers.Gameplay);
-				GameplayRenderer.Begin();
-			}
-			else {
-				orig(self);
+            orig(self, scene);
+        }
 
-			}
-		}
+        private static bool PlayerCollider_Check(On.Celeste.PlayerCollider.orig_Check orig, PlayerCollider self, Player player) {
+            return !Rewinding && orig(self, player);
+        }
 
-		private static void SubHudRenderer_Render(On.Celeste.Mod.UI.SubHudRenderer.orig_Render orig, UI.SubHudRenderer self, Scene scene) {
+        private static void Level_OnLoadLevel(Level level, Player.IntroTypes playerIntro, bool isFromLoader) {
+            ClearRewindBuffer();
+            Rewinding = false;
+        }
 
+        private static void Player_Update(On.Celeste.Player.orig_Update orig, Player self) {
+            if (Rewinding) {
+                Engine.TimeRate = 1;
+                orig(self);
+                Engine.TimeRate = 0;
+            } else {
+                orig(self);
+                states[currentFrame] = new CharacterState(self);
+                currentFrame++;
+                currentFrame %= states.Length;
 
-			if (MInput.Keyboard.Pressed(Microsoft.Xna.Framework.Input.Keys.Q)) {
-				LoadGraphics();
-			}
+                if (maxRewind < states.Length) {
+                    maxRewind++;
+                }
+            }
+        }
 
-			if (scene is Level && RenderStrength > 0) {
-				Level level = scene as Level;
+        private void OnPlayer(Player player) {
+            if (Rewinding) {
+                return;
+            }
 
-				Entity e = level.Entities.FindFirst<Player>();
+            Coroutine co = new(RewindRoutine()) {
+                UseRawDeltaTime = true
+            };
+            Audio.Play("event:/new_content/game/10_farewell/pinkdiamond_touch", Position);
 
-				if (e == null) {
-					orig(self, scene);
-					return;
-				}
+            Add(co);
+        }
 
-				float scale = Math.Min(Engine.ViewWidth / 320.0f, Engine.ViewHeight / 180.0f);
+        private IEnumerator RewindRoutine() {
 
-				Vector2 p = e.Position;
+            Player player = Scene.Tracker.GetEntity<Player>();
+            Rewinding = true;
+            player.Collidable = false;
 
-				Matrix m = Matrix.CreateTranslation(p.X - 32, p.Y - 32, 0) * level.Camera.Matrix * Matrix.CreateScale(scale);
+            Celeste.Freeze(0.05f);
+            Collidable = false;
+            yield return null;
 
-				if (RenderStrength > 0.1) {
+            visuals.Visible = false;
+            if (!oneUse) {
+                outline.Visible = true;
+            }
 
-					glitchEffect.Parameters["time"].SetValue(scene.RawTimeActive);
-					glitchEffect.Parameters["strength"].SetValue(1);
+            level.Shake();
 
-					Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, glitchEffect, m);
+            player.StateMachine.State = Player.StDummy;
+            player.ForceCameraUpdate = true;
+            player.DummyGravity = false;
 
-				}
-				else {
+            Engine.TimeRate = 0;
 
-					ColorGrade.Set(GFX.ColorGrades["isagrabbag/rewind_flash"]);
+            float f;
+            for (f = 0; f < 0.5f; f += Engine.RawDeltaTime) {
 
-					Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, ColorGrade.Effect, m);
+                RenderStrength = f * 2;
 
-				}
-				Draw.SpriteBatch.Draw(playerTarget, Vector2.Zero, Color.White);
+                if (Input.MenuConfirm.Pressed) {
+                    Input.MenuConfirm.ConsumePress();
+                    break;
+                }
 
-				Draw.SpriteBatch.End();
-			}
+                yield return null;
+            }
 
-			orig(self, scene);
-		}
+            RenderStrength = 1;
 
+            int stateLen = states.Length;
+            int lastFrame = currentFrame;
 
-		private static bool PlayerCollider_Check(On.Celeste.PlayerCollider.orig_Check orig, PlayerCollider self, Player player) {
-			if (Rewinding)
-				return false;
-			else
-				return orig(self, player);
-		}
+            int unpausedState = (currentFrame + 1) % stateLen;
+            bool hitPause = false;
 
-		private static void Level_OnLoadLevel(Level level, Player.IntroTypes playerIntro, bool isFromLoader) {
-			ClearRewindBuffer();
-			Rewinding = false;
-		}
+            const float rewindLength = 2;
 
-		private static void Player_Update(On.Celeste.Player.orig_Update orig, Player self) {
-			if (Rewinding) {
-				Engine.TimeRate = 1;
-				orig(self);
-				Engine.TimeRate = 0;
-			}
-			else {
-				orig(self);
-				states[currentFrame] = new CharacterState(self);
-				currentFrame++;
-				currentFrame %= states.Length;
+            for (f = 0; f < rewindLength + .15f; f += Engine.RawDeltaTime) {
 
-				if (maxRewind < states.Length)
-					maxRewind++;
-			}
-		}
+                if (f < rewindLength && !hitPause) {
 
+                    float sampledCurve = 1 - Ease.SineInOut(f / 2);
 
-		private bool oneUse = false;
-		private Level level;
-		private float respawnTime;
+                    int offset = (int)((stateLen - 1) * sampledCurve);
+                    int newFrame = (currentFrame + offset) % stateLen;
 
-		Sprite visuals;
-		Image outline;
-		
-		public RewindCrystal(EntityData data, Vector2 offset) : this(data.Position + offset) { }
+                    while (lastFrame != newFrame) {
 
-		public RewindCrystal(Vector2 position) : base(position) {
-			visuals = GrabBagModule.sprites.Create("rewind_crystal");
-			outline = new Image(GFX.Game["isafriend/objects/rewind/outline00"]);
-			outline.Position = new Vector2(-8, -8);
-			outline.Visible = false;
+                        lastFrame = (lastFrame + stateLen - 1) % stateLen;
 
-			Collider = new Hitbox(16, 16, -8, -8);
+                        if (lastFrame > currentFrame && maxRewind < stateLen) {
+                            unpausedState = 0;
+                            break;
+                        }
 
-			Add(visuals);
-			Add(new PlayerCollider(OnPlayer));
-			Add(outline);
+                        states[lastFrame].SetOnPlayer(player);
 
+                        if (level.CollideCheck<UnpauseCrystal>(player.Collider.Bounds)) {
+                            unpausedState = lastFrame;
+                            hitPause = true;
+                            f = rewindLength - 0.15f;
+                            break;
+                        }
+                    }
+                }
 
-			Depth = 1500;
-		}
+                if (f >= rewindLength - 0.15f) {
+                    RenderStrength = Calc.ClampedMap(f, rewindLength - 0.15f, rewindLength + 0.15f, 1, 0);// 1 - ((f - rewindLength) / .15f);
+                }
 
+                Vector2 position = level.Camera.Position;
+                Vector2 cameraTarget = player.CameraTarget;
 
-		public override void Added(Scene scene) {
-			base.Added(scene);
-			level = SceneAs<Level>();
-		}
+                level.Camera.Position = position + ((cameraTarget - position) * (1f - (float)Math.Pow(0.01f, 0.1)));
 
-		public override void Update() {
+                yield return null;
+            }
 
-			base.Update();
-		}
+            RenderStrength = 0;
+            states[unpausedState].SetOnPlayerFinal(player);
 
-		private void OnPlayer(Player player) {
-			if (Rewinding)
-				return;
+            yield return 0.1f;
 
-			var co = new Coroutine(RewindRoutine());
-			co.UseRawDeltaTime = true;
-			Audio.Play("event:/new_content/game/10_farewell/pinkdiamond_touch", Position);
+            player.StateMachine.State = Player.StNormal;
+            Engine.TimeRate = 1;
 
-			Add(co);
-		}
+            Rewinding = false;
 
-		private IEnumerator RewindRoutine() {
+            player.Collidable = true;
 
-			Player player = Scene.Tracker.GetEntity<Player>();
-			Rewinding = true;
-			player.Collidable = false;
+            maxRewind = 0;
 
-			Celeste.Freeze(0.05f);
-			Collidable = false;
-			yield return null;
+            ClearRewindBuffer();
+            if (oneUse) {
+                RemoveSelf();
+            } else {
+                Add(new Coroutine(RespawnRoutine()));
+            }
+        }
 
-			visuals.Visible = false;
-			if (!oneUse)
-				outline.Visible = true;
-			level.Shake();
+        private IEnumerator RespawnRoutine() {
 
-			player.StateMachine.State = Player.StDummy;
-			player.ForceCameraUpdate = true;
-			player.DummyGravity = false;
+            yield return 1.5f;
 
-			Engine.TimeRate = 0;
+            visuals.Visible = true;
+            Collidable = true;
+            Audio.Play("event:/game/general/diamond_return", Position);
+        }
+    }
 
-			float f;
-			for (f = 0; f < 0.5f; f += Engine.RawDeltaTime) {
+    [CustomEntity("isaBag/pauseCrystal")]
+    [Tracked(false)]
+    public class UnpauseCrystal : Entity {
+        private readonly Sprite visuals;
 
-				RenderStrength = f * 2;
+        public UnpauseCrystal(Vector2 position) : base(position) {
+            visuals = GrabBagModule.sprites.Create("pause_crystal");
+            Collider = new Hitbox(12, 12, -6, -6);
+            Add(visuals);
+            Depth = 1500;
+        }
 
-				if (Input.MenuConfirm.Pressed) {
-					Input.MenuConfirm.ConsumePress();
-					break;
-				}
-				yield return null;
-			}
-			RenderStrength = 1;
+        public UnpauseCrystal(EntityData data, Vector2 offset)
+            : this(data.Position + offset) {
+        }
+    }
 
-			int stateLen = states.Length;
-			int lastFrame = currentFrame;
+    internal struct CharacterState {
+        public Vector2 pos, scale;
+        public Facings facing;
+        public int dashCount;
+        public Color hairColor;
+        public Vector2[] hairPosition;
+        public MTexture texture;
+        public Vector2 velocity;
 
-			int unpausedState = (currentFrame + 1) % stateLen;
-			bool hitPause = false;
+        public CharacterState(Player player) {
+            pos = player.Position;
+            scale = player.Sprite.Scale;
+            facing = player.Facing;
+            texture = player.Sprite.Texture;
+            dashCount = player.Dashes;
+            velocity = player.Speed;
+            PlayerHair hair = player.Hair;
+            hairColor = hair.Color;
+            hairPosition = new Vector2[10];
 
-			const float rewindLength = 2;
+            for (int i = 0; i < Math.Min(hair.Nodes.Count, hairPosition.Length); ++i) {
+                hairPosition[i] = hair.Nodes[i];
+            }
+        }
 
-			for (f = 0; f < rewindLength + .15f; f += Engine.RawDeltaTime) {
+        public void SetOnPlayer(Player player) {
+            player.NaiveMove(pos - player.Position);
+            player.Sprite.Scale = scale;
+            player.Facing = facing;
+            player.Dashes = dashCount;
 
-				if (f < rewindLength && !hitPause) {
+            player.Sprite.Texture = texture;
 
-					float sampledCurve = 1 - Ease.SineInOut(f / 2);
+            if (hairPosition == null) {
+                return;
+            }
 
-					int offset = (int)((stateLen - 1) * sampledCurve);
-					int newFrame = (currentFrame + offset) % stateLen;
-
-					while (lastFrame != newFrame) {
-
-						lastFrame = (lastFrame + stateLen - 1) % stateLen;
-
-						if (lastFrame > currentFrame && maxRewind < stateLen) {
-							unpausedState = 0;
-							break;
-						}
-
-						states[lastFrame].SetOnPlayer(player);
-
-						if (level.CollideCheck<UnpauseCrystal>(player.Collider.Bounds)) {
-							unpausedState = lastFrame;
-							hitPause = true;
-							f = rewindLength - 0.15f;
-							break;
-						}
-
-					}
-				}
-				if (f >= rewindLength - 0.15f) {
-					RenderStrength = Calc.ClampedMap(f, rewindLength - 0.15f, rewindLength + 0.15f, 1, 0);// 1 - ((f - rewindLength) / .15f);
-				}
-
-
-				Vector2 position = level.Camera.Position;
-				Vector2 cameraTarget = player.CameraTarget;
-
-				level.Camera.Position = position + (cameraTarget - position) * (1f - (float)Math.Pow(0.01f, 0.1));
-
-				yield return null;
-			}
-
-			RenderStrength = 0;
-			states[unpausedState].SetOnPlayerFinal(player);
-
-			yield return 0.1f;
-
-			player.StateMachine.State = Player.StNormal;
-			Engine.TimeRate = 1;
-
-			Rewinding = false;
-
-			player.Collidable = true;
-
-			maxRewind = 0;
-
-			ClearRewindBuffer();
-			if (oneUse)
-				RemoveSelf();
-			else {
-				Add(new Coroutine(RespawnRoutine()));
-			}
-		}
-
-		private IEnumerator RespawnRoutine() {
-
-			
-			yield return 1.5f;
-
-			visuals.Visible = true;
-			Collidable = true;
-			Audio.Play("event:/game/general/diamond_return", Position);
-		}
-	}
-	[Tracked(false)]
-	public class UnpauseCrystal : Entity {
-
-		Sprite visuals;
-
-		public UnpauseCrystal(EntityData data, Vector2 offset) : this(data.Position + offset) { }
-
-		public UnpauseCrystal(Vector2 position) : base(position) {
-			visuals = GrabBagModule.sprites.Create("pause_crystal");
-
-			Collider = new Hitbox(12, 12, -6, -6);
-
-			Add(visuals);
-
-			Depth = 1500;
-		}
-
-
-		public override void Added(Scene scene) {
-			base.Added(scene);
-		}
-
-		public override void Update() {
-
-			base.Update();
-		}
-	}
+            for (int i = 0; i < Math.Min(player.Hair.Nodes.Count, hairPosition.Length); ++i) {
+                player.Hair.Nodes[i] = hairPosition[i];
+            }
+        }
+        public void SetOnPlayerFinal(Player player) {
+            SetOnPlayer(player);
+            player.Speed = velocity;
+        }
+    }
 }
