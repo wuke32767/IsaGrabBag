@@ -5,7 +5,7 @@ using ..Ahorn, Maple
 @mapdef Entity "isaBag/waterBoost" WaterBoost(x::Integer, y::Integer, boostEnabled::Bool=true)
 
 const placements = Ahorn.PlacementDict(
-	"Water Boost (IsaGrabBag)" => Ahorn.EntityPlacement(
+	"Water Boost Controller (IsaGrabBag)" => Ahorn.EntityPlacement(
 		WaterBoost,
 		"rectangle",
 		Dict{String, Any}(

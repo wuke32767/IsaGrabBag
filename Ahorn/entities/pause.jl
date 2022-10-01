@@ -1,6 +1,7 @@
-module IsaGrabBagEntities
+module IsaGrabBagPauseCrystal
 
 using ..Ahorn, Maple
+
 @mapdef Entity "isaBag/pauseCrystal" PauseCrystal(x::Integer, y::Integer)
 
 const placements = Ahorn.PlacementDict(

@@ -1,6 +1,7 @@
-module IsaGrabBagEntities
+module IsaGrabBagArrowBubble
 
 using ..Ahorn, Maple
+
 @mapdef Entity "isaBag/arrowBubble" ArrowBubble(x::Integer, y::Integer, direction::String="down")
 
 const directions = String[

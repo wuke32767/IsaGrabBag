@@ -1,14 +1,8 @@
-module IsaGrabBagEntities
+module IsaGrabBagCornerBlock
 
 using ..Ahorn, Maple
-@mapdef Entity "isaBag/cornerBlock" CornerBoostBlock(x::Integer, y::Integer, tiletype::String="1", useTileset::Bool=false)
 
-const placements = Ahorn.PlacementDict(
-	"Corner Boost Block (IsaGrabBag)" => Ahorn.EntityPlacement(
-		CornerBoostBlock,
-		"rectangle"
-	)
-)
+@mapdef Entity "isaBag/cornerBlock" CornerBoostBlock(x::Integer, y::Integer, tiletype::String="1", useTileset::Bool=false)
 
 Ahorn.minimumSize(entity::CornerBoostBlock) = 8, 8
 Ahorn.resizable(entity::CornerBoostBlock) = true, true

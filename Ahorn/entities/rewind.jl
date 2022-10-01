@@ -1,6 +1,7 @@
-module IsaGrabBagEntities
+module IsaGrabBagRewindCrystal
 
 using ..Ahorn, Maple
+
 @mapdef Entity "isaBag/rewindCrystal" RewindCrystal(x::Integer, y::Integer, oneUse::Bool=true)
 
 const placements = Ahorn.PlacementDict(

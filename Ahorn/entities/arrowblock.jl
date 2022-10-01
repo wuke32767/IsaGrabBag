@@ -1,6 +1,7 @@
-module IsaGrabBagEntities
+module IsaGrabBagArrowBlock
 
 using ..Ahorn, Maple
+
 @mapdef Entity "isaBag/arrowBlock" IsaArrowBlock(x::Integer, y::Integer, distance::Integer=16, inverted::Bool=false, movementRestriction::String="no_limit")
 
 const placements = Ahorn.PlacementDict(
