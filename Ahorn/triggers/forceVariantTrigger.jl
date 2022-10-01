@@ -1,8 +1,7 @@
-module IsaGrabBagTriggers
+module IsaGrabBagForceVariantTrigger
 
 using ..Ahorn, Maple
 
-@mapdef Trigger "CoreHeatWindTrigger" CoreWindTrigger(x::Integer, y::Integer, width::Integer=16, height::Integer=16, patternHot::String="Up", patternCold::String="Down")
 @mapdef Trigger "ForceVariantTrigger" VariantTrigger(x::Integer, y::Integer, width::Integer=16, height::Integer=16, variantChange::String="Hiccups", enableStyle::String="EnabledPermanent")
 
 const variants = String[
@@ -18,6 +17,7 @@ const variants = String[
 	"ThreeSixtyDashing",
 	"DashAssist"
 ]
+
 const variantMod = String[
 	"Enabled",
 	"Disabled",
@@ -30,22 +30,11 @@ const variantMod = String[
 ]
 
 const placements = Ahorn.PlacementDict(
-	"Core Wind Trigger (IsaGrabBag)" => Ahorn.EntityPlacement(
-		CoreWindTrigger,
-		"rectangle"
-	),
 	"Force Variant Trigger (IsaGrabBag)" => Ahorn.EntityPlacement(
 		VariantTrigger,
 		"rectangle"
 	)
 )
-
-function Ahorn.editingOptions(trigger::CoreWindTrigger)
-	return Dict{String, Any}(
-		"patternHot" => Maple.wind_patterns,
-		"patternCold" => Maple.wind_patterns
-	)
-end
 
 function Ahorn.editingOptions(trigger::VariantTrigger)
 	return Dict{String, Any}(
