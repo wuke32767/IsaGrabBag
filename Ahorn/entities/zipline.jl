@@ -1,22 +1,10 @@
-module IsaGrabBagEntities
+module IsaGrabBagZipline
 
 using ..Ahorn, Maple
-@mapdef Entity "isaBag/waterBoost" WaterBoost(x::Integer, y::Integer, boostEnabled::Bool=true)
+
 @mapdef Entity "isaBag/zipline" Zipline(x::Integer, y::Integer, nodes::Array{Tuple{Integer, Integer}, 1}=Tuple{Integer, Integer}[])
-@mapdef Entity "isaBag/baddyFollow" BadelineFriend(x::Integer, y::Integer, nodes::Array{Tuple{Integer, Integer}, 1}=Tuple{Integer, Integer}[])
 
 const placements = Ahorn.PlacementDict(
-	"Water Boost (IsaGrabBag)" => Ahorn.EntityPlacement(
-		WaterBoost,
-		"rectangle",
-		Dict{String, Any}(
-			"boostEnabled" => true
-		)
-	),
-	"Badeline Friend (IsaGrabBag)" => Ahorn.EntityPlacement(
-		BadelineFriend,
-		"rectangle"
-	),
 	"Zipline (IsaGrabBag)" => Ahorn.EntityPlacement(
 		Zipline,
 		"rectangle"
@@ -24,19 +12,6 @@ const placements = Ahorn.PlacementDict(
 )
 
 Ahorn.nodeLimits(entity::Zipline) = 0, 2
-
-sprite = "isafriend/helperimage.png"
-
-function Ahorn.selection(entity::BadelineFriend)
-	x, y = Ahorn.position(entity)
-	return Ahorn.getSpriteRectangle("baddyAhorn.png", x, y)
-	
-end
-function Ahorn.selection(entity::WaterBoost)
-	x, y = Ahorn.position(entity)
-	return Ahorn.getSpriteRectangle(sprite, x, y)
-	
-end
 
 function Ahorn.selection(entity::Zipline)
 
@@ -55,12 +30,7 @@ function Ahorn.selection(entity::Zipline)
 
     return res
 end
-function Ahorn.render(ctx::Ahorn.Cairo.CairoContext, entity::WaterBoost, room::Maple.Room)
-	Ahorn.drawSprite(ctx, sprite, 0, 0)
-end
-function Ahorn.render(ctx::Ahorn.Cairo.CairoContext, entity::BadelineFriend, room::Maple.Room)
-	Ahorn.drawSprite(ctx, "isafriend/baddyAhorn.png", 0, 0)
-end
+
 function Ahorn.render(ctx::Ahorn.Cairo.CairoContext, entity::Zipline, room::Maple.Room)
     
     ex, ey = Ahorn.position(entity)
