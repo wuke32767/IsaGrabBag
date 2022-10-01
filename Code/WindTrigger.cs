@@ -2,12 +2,12 @@
 using Microsoft.Xna.Framework;
 
 namespace Celeste.Mod.IsaGrabBag {
-    [CustomEntity("CoreHeatWindTrigger")]
-    public class HotColdWind : Trigger {
+    [CustomEntity("isaBag/coreWindTrigger", "CoreHeatWindTrigger")]
+    public class CoreWindTrigger : Trigger {
         public WindController.Patterns windHot, windCold;
         private static bool current;
 
-        public HotColdWind(EntityData data, Vector2 offset) : base(data, offset) {
+        public CoreWindTrigger(EntityData data, Vector2 offset) : base(data, offset) {
             windHot = data.Enum("patternHot", WindController.Patterns.Up);
             windCold = data.Enum("patternCold", WindController.Patterns.Down);
         }

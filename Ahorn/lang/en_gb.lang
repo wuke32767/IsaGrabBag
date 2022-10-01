@@ -1,0 +1,28 @@
+# Arrow Bubble
+placements.entities.isaBag/arrowBubble.tooltips.direction=The direction that the bubble will curve in.
+
+# Corner Boost Block
+placements.entities.isaBag/cornerBlock.tooltips.tiletype=Changes the visual appearance of the block.
+placements.entities.isaBag/cornerBlock.tooltips.useTileset=Whether to use the tiletype field instead of the default block texture.
+
+# Dream Spinner
+placements.entities.isaBag/dreamSpinner.tooltips.useOnce=Whether the spinner should shatter after being dashed through.
+
+# Friendly Kevin
+placements.entities.isaBag/arrowBlock.tooltips.distance=The maximum distance the Kevin can move, in pixels.
+placements.entities.isaBag/arrowBlock.tooltips.inverted=Whether the Kevin should move in the opposite direction of the player's movement.
+placements.entities.isaBag/arrowBlock.tooltips.movementRestriction=The axis the Kevin is allowed to move on. Use "no_limit" for free movement.
+
+# Rewind Crystal
+placements.entities.isaBag/rewindCrystal.tooltips.oneUse=Whether the refill should respawn after being used.
+
+# Water Boost Controller
+placements.entities.isaBag/waterBoost.tooltips.boostEnabled=Whether to enable waterboosting in the map.
+
+# Core Wind Trigger
+placements.triggers.isaBag/coreWindTrigger.tooltips.patternHot=The wind pattern to use when the core mode is Hot.
+placements.triggers.isaBag/coreWindTrigger.tooltips.patternCold=The wind pattern to use when the core mode is Cold.
+
+# Force Variant Trigger
+placements.triggers.ForceVariantTrigger.tooltips.variantChange=The variant to change.
+placements.triggers.ForceVariantTrigger.tooltips.enableStyle=The change to apply to the variant when entering the trigger.\n* Enabled/Disabled: turns the variant on or off.\n* Permanent: applies the change to the session so it persists after S&Q.\n* Temporary: reverts the change after leaving the trigger.\n* Toggle: changes the variant to the opposite of its current state.\n* SetToDefault: sets the variant to its initial state.

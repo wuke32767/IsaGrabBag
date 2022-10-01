@@ -13,7 +13,7 @@ const placements = Ahorn.PlacementDict(
 
 function Ahorn.selection(entity::BadelineFriend)
 	x, y = Ahorn.position(entity)
-	return Ahorn.getSpriteRectangle("baddyAhorn.png", x, y)
+	return Ahorn.getSpriteRectangle("isafriend/baddyAhorn.png", x, y)
 	
 end
 
