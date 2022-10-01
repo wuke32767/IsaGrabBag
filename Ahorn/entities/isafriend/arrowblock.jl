@@ -35,11 +35,11 @@ function Ahorn.selection(entity::IsaArrowBlock)
 end
 
 const frameImage = Dict{String, String}(
-    "no_limit" => "objects/isafriend/arrowblock/block00",
-    "horizontal" => "objects/isafriend/arrowblock/block01",
-    "vertical" => "objects/isafriend/arrowblock/block02",
-    "cardinal" => "objects/isafriend/arrowblock/block03",
-    "diagonal" => "objects/isafriend/arrowblock/block04"
+    "no_limit" => "isafriend/objects/arrowblock/block00",
+    "horizontal" => "isafriend/objects/arrowblock/block01",
+    "vertical" => "isafriend/objects/arrowblock/block02",
+    "cardinal" => "isafriend/objects/arrowblock/block03",
+    "diagonal" => "isafriend/objects/arrowblock/block04"
 )
 const kevinColor = (72, 59, 105) ./ 255
 
@@ -51,7 +51,7 @@ function Ahorn.render(ctx::Ahorn.Cairo.CairoContext, entity::IsaArrowBlock, room
     height = Int(get(entity.data, "height", 32))
 
     frame = frameImage[String(get(entity.data, "movementRestriction", "no_limit"))]
-    faceSprite = Ahorn.getSprite("objects/isafriend/arrowblock/idle_face", "Gameplay")
+    faceSprite = Ahorn.getSprite("isafriend/objects/arrowblock/idle_face", "Gameplay")
 
     tilesWidth = div(width, 8)
     tilesHeight = div(height, 8)
