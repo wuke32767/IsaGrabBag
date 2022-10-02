@@ -29,13 +29,6 @@ const variantMod = String[
 	"SetToDefault"
 ]
 
-const placements = Ahorn.PlacementDict(
-	"Force Variant Trigger (IsaGrabBag)" => Ahorn.EntityPlacement(
-		VariantTrigger,
-		"rectangle"
-	)
-)
-
 function Ahorn.editingOptions(trigger::VariantTrigger)
 	return Dict{String, Any}(
 		"variantChange" => variants,
