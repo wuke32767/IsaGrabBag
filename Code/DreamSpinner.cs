@@ -11,7 +11,7 @@ namespace Celeste.Mod.IsaGrabBag {
     public class DreamSpinner : Entity {
         private static readonly Color debrisColor = Calc.HexToColor("c18a53");
 
-        public bool Fragile;
+        public bool OneUse;
         public bool Fake;
 
         internal float rotation;
@@ -21,7 +21,6 @@ namespace Celeste.Mod.IsaGrabBag {
         private readonly int ID;
         private DreamBlock block;
         private bool hasCollided;
-        private bool playerHasDreamDash;
 
         public DreamSpinner(Vector2 position, bool _useOnce, bool _fake)
             : base(position) {
@@ -33,7 +32,7 @@ namespace Celeste.Mod.IsaGrabBag {
             Add(new PlayerCollider(OnPlayer));
             Add(new LedgeBlocker());
 
-            Fragile = _useOnce;
+            OneUse = _useOnce;
             Fake = _fake;
             Depth = -8499; // Update just before our renderer
             Collidable = false;
@@ -51,8 +50,6 @@ namespace Celeste.Mod.IsaGrabBag {
         public override void Added(Scene scene) {
             base.Added(scene);
 
-            playerHasDreamDash = SceneAs<Level>().Session.Inventory.DreamDash;
-
             if (!Fake) {
                 scene.Add(block = new DreamBlock(Center - new Vector2(8, 8), 16, 16, null, false, false));
                 block.Visible = false;
@@ -67,14 +64,14 @@ namespace Celeste.Mod.IsaGrabBag {
             base.Awake(scene);
 
             color = Color.Black;
-            if (!playerHasDreamDash) {
+            if (!SceneAs<Level>().Session.Inventory.DreamDash) {
                 color = new Color(25, 25, 25);
-            } else if (Fragile) {
+            } else if (OneUse) {
                 color = new Color(30, 22, 10);
             }
 
             foreach (DreamSpinner spinner in Scene.Tracker.GetEntities<DreamSpinner>()) {
-                if (spinner.Fragile == Fragile && spinner.ID > ID && (spinner.Position - Position).LengthSquared() < 576f) {
+                if (spinner.OneUse == OneUse && spinner.ID > ID && (spinner.Position - Position).LengthSquared() < 576f) {
                     offsets.Add((Position + spinner.Position) / 2f);
                 }
             }
@@ -99,8 +96,7 @@ namespace Celeste.Mod.IsaGrabBag {
             }
 
             if (player != null) {
-                playerHasDreamDash = player.Inventory.DreamDash;
-                if (Fragile) {
+                if (OneUse) {
                     bool isColliding = block.Collidable && player.Collider.Collide(block);
 
                     if (!isColliding && hasCollided) {
@@ -115,7 +111,7 @@ namespace Celeste.Mod.IsaGrabBag {
                     hasCollided = isColliding;
                 }
 
-                if ((player.DashAttacking || player.StateMachine.State == Player.StDreamDash) && playerHasDreamDash) {
+                if ((player.DashAttacking || player.StateMachine.State == Player.StDreamDash) && player.Inventory.DreamDash) {
                     block.Collidable = true;
                     Collidable = false;
                 } else {
@@ -294,7 +290,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
         private void DrawSpinnerBorders() {
             foreach (DreamSpinner spinner in spinnersToRender) {
-                Color borderColor = !dreamDashEnabled ? Color.Gray : spinner.Fragile ? Color.Orange * 0.9f : Color.White;
+                Color borderColor = !dreamDashEnabled ? Color.Gray : spinner.OneUse ? Color.Orange * 0.9f : Color.White;
 
                 fgSpinnerImage.SetRenderPosition(spinner.Position).SetColor(borderColor).SetRotation(spinner.rotation);
                 DrawBorder(fgSpinnerImage);
