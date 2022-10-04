@@ -16,7 +16,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
         private float previousPosition;
 
-        public BadelineFollower(Level level, BadelineDummy _dummy, Vector2 position) 
+        public BadelineFollower(Level level, BadelineDummy _dummy, Vector2 position)
             : base(position) {
             level.Session.SetFlag(SESSION_FLAG, true);
 
@@ -160,7 +160,6 @@ namespace Celeste.Mod.IsaGrabBag {
             obj.Leader.GainFollower(follower);
             dummy.Position = obj.Position - new Vector2(obj.Facing == Facings.Left ? -5 : 5, 16);
         }
-
 
         private static IEnumerator Skip() {
             Player player = GrabBagModule.playerInstance;

@@ -23,7 +23,7 @@ namespace Celeste.Mod.IsaGrabBag {
         private readonly Image outline;
         private Level level;
 
-        public RewindCrystal(Vector2 position) 
+        public RewindCrystal(Vector2 position)
             : base(position) {
             visuals = GrabBagModule.sprites.Create("rewind_crystal");
             outline = new Image(GFX.Game["isafriend/objects/rewind/outline00"]) {
@@ -40,8 +40,8 @@ namespace Celeste.Mod.IsaGrabBag {
             Depth = 1500;
         }
 
-        public RewindCrystal(EntityData data, Vector2 offset) 
-            : this(data.Position + offset) { 
+        public RewindCrystal(EntityData data, Vector2 offset)
+            : this(data.Position + offset) {
         }
 
         public static bool Rewinding { get; internal set; } = false;

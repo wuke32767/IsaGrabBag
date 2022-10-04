@@ -15,14 +15,14 @@ namespace Celeste.Mod.IsaGrabBag {
         private bool HasGroup;
         private Point GroupBoundsMin, GroupBoundsMax;
 
-        public CornerBoostBlock(Vector2 position, int width, int height, char tile, bool useTileset) 
+        public CornerBoostBlock(Vector2 position, int width, int height, char tile, bool useTileset)
             : base(position, width, height, true) {
             _tileset = useTileset ? tile : '\0';
             OnCollide = OnCollision;
         }
 
-        public CornerBoostBlock(EntityData data, Vector2 offset) 
-            : this(data.Position + offset, data.Width, data.Height, data.Char("tiletype", '3'), data.Bool("useTileset", false)) { 
+        public CornerBoostBlock(EntityData data, Vector2 offset)
+            : this(data.Position + offset, data.Width, data.Height, data.Char("tiletype", '3'), data.Bool("useTileset", false)) {
         }
 
         public bool CustomTile => _tileset != '\0';
@@ -174,6 +174,7 @@ namespace Celeste.Mod.IsaGrabBag {
             if (dir.X == 0 || player == null) {
                 return;
             }
+
             if (DynamicData.For(player).Get<float>("wallSpeedRetentionTimer") == 0.06f) {
                 DynamicData.For(player).Set("wallSpeedRetentionTimer", 0.12f);
             }
@@ -205,8 +206,8 @@ namespace Celeste.Mod.IsaGrabBag {
             foreach (Entity entity in Scene.Tracker.GetEntities<CornerBoostBlock>()) {
                 CornerBoostBlock block = (CornerBoostBlock)entity;
 
-                if (!block.HasGroup && block._tileset == _tileset && 
-                    (Scene.CollideCheck(new Rectangle((int)from.X - 1, (int)from.Y, (int)from.Width + 2, (int)from.Height), block) || 
+                if (!block.HasGroup && block._tileset == _tileset &&
+                    (Scene.CollideCheck(new Rectangle((int)from.X - 1, (int)from.Y, (int)from.Width + 2, (int)from.Height), block) ||
                     Scene.CollideCheck(new Rectangle((int)from.X, (int)from.Y - 1, (int)from.Width, (int)from.Height + 2), block))) {
                     AddToGroupAndFindChildren(block);
                 }

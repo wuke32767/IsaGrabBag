@@ -10,7 +10,7 @@ namespace Celeste.Mod.IsaGrabBag {
         private readonly Sprite sprite;
         private static Vector2 GravityDir;
 
-        public ArrowBubble(EntityData data, Vector2 offset) 
+        public ArrowBubble(EntityData data, Vector2 offset)
             : base(data.Position + offset, true) {
             string dir = data.Attr("direction", "down");
 
@@ -83,7 +83,7 @@ namespace Celeste.Mod.IsaGrabBag {
             }
 
             return value;
-        }        
+        }
 
         private void OnPlayer(Player player) {
             sprite.FlipX = false;

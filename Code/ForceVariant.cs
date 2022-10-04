@@ -325,8 +325,8 @@ namespace Celeste.Mod.IsaGrabBag {
     public class VariantEnforcer : Component {
         private Player player;
 
-        public VariantEnforcer() 
-            : base(active: true, visible: false) { 
+        public VariantEnforcer()
+            : base(active: true, visible: false) {
         }
 
         public override void Update() {

@@ -26,7 +26,7 @@ namespace Celeste.Mod.IsaGrabBag {
         private Image bottomleftCorner;
         private Image bottomrightCorner;
 
-        public ArrowBlock(EntityData _data, Vector2 _offset) 
+        public ArrowBlock(EntityData _data, Vector2 _offset)
             : base(_data.Position + _offset, _data.Width, _data.Height, false) {
             Distance = _data.Int("distance", 16);
             Inverted = _data.Bool("inverted", false);
