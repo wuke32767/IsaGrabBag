@@ -31,7 +31,6 @@ namespace Celeste.Mod.IsaGrabBag {
             }
         }
 
-
         public static int ZipLineState { get; private set; }
         public static int ArrowBlockState { get; private set; }
 
@@ -46,7 +45,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
         public override void Load() {
             ArrowBubble.Load();
-            DreamSpinnerBorder.Load();
+            DreamSpinnerRenderer.Load();
             ForceVariants.Load();
             RewindCrystal.Load();
 
@@ -65,7 +64,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
         public override void Unload() {
             ArrowBubble.Unload();
-            DreamSpinnerBorder.Unload();
+            DreamSpinnerRenderer.Unload();
             ForceVariants.Unload();
             RewindCrystal.Unload();
 
@@ -118,7 +117,6 @@ namespace Celeste.Mod.IsaGrabBag {
         }
 
         public override void LoadContent(bool firstLoad) {
-            DreamSpinnerBorder.LoadTextures();
             RewindCrystal.LoadGraphics();
             sprites = new SpriteBank(GFX.Game, "Graphics/IsaGrabBag.xml");
 

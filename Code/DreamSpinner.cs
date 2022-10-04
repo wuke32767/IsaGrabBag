@@ -2,61 +2,55 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Monocle;
-using System;
 using System.Collections.Generic;
 
 namespace Celeste.Mod.IsaGrabBag {
+    [Tracked]
     [CustomEntity("isaBag/dreamSpinner", "isaBag/dreamSpinFake")]
     public class DreamSpinner : Entity {
-        public int RNG;
-        public bool Fragile;
-        public List<DreamSpinner> spinners;
-        public List<Vector2> fillOffset;
+        private static readonly Color debrisColor = Calc.HexToColor("c18a53");
 
-        private static readonly Color debrisColor = new(0xC1, 0x8A, 0x53);
+        public bool Fragile;
+        public bool Fake;
+
         private static bool dreamdashEnabled = true;
-        private readonly bool fake;
-        private DreamBlock block;
+        internal DreamBlock block;
         private bool hasCollided;
 
-        public DreamSpinner(Vector2 position, bool _useOnce, bool _fake) {
-            Position = position;
-            spinners = new List<DreamSpinner>();
-            fillOffset = new List<Vector2>();
-            Collider = new ColliderList(new Hitbox(16, 4, -8, -3), new Circle(6));
+        private readonly int ID;
+
+        internal float rotation;
+        internal Color color;
+        internal List<Vector2> offsets;
+
+        public DreamSpinner(Vector2 position, bool _useOnce, bool _fake) : base(position) {
+            Collider = new ColliderList(new Collider[] {
+                new Circle(6f, 0f, 0f),
+                new Hitbox(16f, 4f, -8f, -3f)
+            });
 
             Add(new PlayerCollider(OnPlayer));
             Add(new LedgeBlocker());
 
             Fragile = _useOnce;
-            fake = _fake;
-            Visible = false;
-            RNG = Calc.Random.Next(4);
+            Fake = _fake;
             Depth = -8500;
             Collidable = false;
+            Visible = false;
+
+            rotation = Calc.Random.Choose(0, 1, 2, 3) * MathHelper.PiOver2;
+            offsets = new List<Vector2>();
         }
 
         public DreamSpinner(EntityData data, Vector2 offset)
             : this(data.Position + offset, data.Bool("useOnce", false), _fake: data.Name == "isaBag/dreamSpinFake") {
+            ID = data.ID;
         }
 
         public override void Added(Scene scene) {
             base.Added(scene);
 
-            if (!Fragile) {
-                foreach (DreamSpinner spin in SceneAs<Level>().Entities.FindAll<DreamSpinner>()) {
-                    if (spin == this || spin.Fragile || spin.spinners.Contains(this)) {
-                        continue;
-                    }
-
-                    if (Vector2.Distance(spin.Position, Position) < 24) {
-                        spinners.Add(spin);
-                        fillOffset.Add((spin.Center + Center) / 2);
-                    }
-                }
-            }
-
-            if (!fake) {
+            if (!Fake) {
                 scene.Add(block = new DreamBlock(Center - new Vector2(8, 8), 16, 16, null, false, false));
                 block.Visible = false;
 
@@ -66,9 +60,31 @@ namespace Celeste.Mod.IsaGrabBag {
             }
         }
 
+        public override void Awake(Scene scene) {
+            base.Awake(scene);
+
+            color = Color.Black;
+            if (!SceneAs<Level>().Session.Inventory.DreamDash) {
+                color = new Color(25, 25, 25);
+            } else if (Fragile) {
+                color = new Color(30, 22, 10);
+            }
+
+            foreach (DreamSpinner spinner in Scene.Tracker.GetEntities<DreamSpinner>()) {
+                if (spinner.Fragile == Fragile && spinner.ID > ID && (spinner.Position - Position).LengthSquared() < 576f) {
+                    offsets.Add((Position + spinner.Position) / 2f);
+                }
+            }
+        }
+
         public override void Update() {
-            if (fake) {
+            if (Fake) {
                 return;
+            } else if (!InView()){
+                block.Active = false;
+                return;
+            } else {
+                block.Active = true;
             }
 
             Player player = GrabBagModule.playerInstance;
@@ -88,8 +104,8 @@ namespace Celeste.Mod.IsaGrabBag {
                         RemoveSelf();
                         block.RemoveSelf();
 
-                        Audio.Play("event:/game/06_reflection/fall_spike_smash", Position);
-                        CrystalDebris.Burst(Center, debrisColor, false, 4); //c18a53
+                        Audio.Play(SFX.game_06_fall_spike_smash, Position);
+                        CrystalDebris.Burst(Center, debrisColor, false, 4);
                         return;
                     }
 
@@ -117,343 +133,205 @@ namespace Celeste.Mod.IsaGrabBag {
         }
     }
 
-    internal class DreamSpinnerBorder : Entity {
-        public const int SPIN_TYPE_COUNT = 4;
-        public const int SPRITE_MAIN = 21, SPRITE_FILLER = 14;
-        private const int starCount = 700;
-        private const int depthDiv = starCount / 5;
-        private const int WIDTH = 320 + 2, HEIGHT = 180 + 2;
+    public class DreamSpinnerRenderer : Entity {
+        private const int ParticleCount = 700;
 
-        internal static DreamSpinnerBorder mainInstance;
+        private readonly MTexture[] particleTextures;
+        private DreamParticle[] particles;
 
-        private static Image spinnerMainTex, spinnerBGTex;
-        private static Image[] starTextures;
-        private static Effect borderEffect, starEffect, spinnerEffect;
-        private static DepthStencilState spinnerState;
-        private static DepthStencilState starState;
-        private static RenderTarget2D mainTarget;
-        private static bool dreamDashEnabled;
-        private static GameplayRenderer gameplayInstance;
-        private static Star[] stars;
-        private static readonly Color[][] colors = new Color[][]{
-            new Color[]{
-                Calc.HexToColor("6383b8"),
-                Calc.HexToColor("ba4a4a"),
-                Calc.HexToColor("f0ff00"),
-                Calc.HexToColor("9800b2"),
-                Calc.HexToColor("9800b2"),
-                Calc.HexToColor("3ca31d"),
-                Calc.HexToColor("72e0ea")
-            },
-            new Color[]{
-                Color.Orange,
-                Color.Orange,
-                Color.Orange,
-                Color.Orange,
-                Color.Orange,
-                Color.Orange,
-                Color.Orange,
-            },
-            new Color[]{
-                Calc.HexToColor("666666"),
-                Calc.HexToColor("666666"),
-                Calc.HexToColor("666666"),
-                Calc.HexToColor("666666"),
-                Calc.HexToColor("666666"),
-                Calc.HexToColor("666666"),
-                Calc.HexToColor("666666")
-            }
+        private readonly Image fgSpinnerImage;
+        private readonly Image bgSpinnerImage;
+
+        private bool dreamDashEnabled;
+        private bool hasDreamSpinners;
+
+        private VirtualRenderTarget particlesTarget;
+
+        private float animTimer = 0f;
+
+        public static BlendState DestinationAlphaBlend = new() {
+            ColorSourceBlend = Blend.DestinationAlpha,
+            ColorDestinationBlend = Blend.InverseSourceAlpha,
+            AlphaSourceBlend = Blend.Zero,
+            AlphaDestinationBlend = Blend.One,
+            AlphaBlendFunction = BlendFunction.Add
         };
 
-        private Vector2 camPos, lastCamPos;
-
-        public DreamSpinnerBorder() {
+        public DreamSpinnerRenderer() {
             Depth = -8500;
+            AddTag(Tags.Global | Tags.TransitionUpdate);
+            Add(new BeforeRenderHook(BeforeRender));
 
-            mainInstance = this;
-            AddTag(Tags.Global);
-        }
-
-        public static void Load() {
-            On.Celeste.GameplayRenderer.ctor += GameplayRenderer_ctor;
-            Everest.Events.Level.OnExit += Level_OnExit;
-            On.Celeste.Level.ctor += Level_ctor;
-
-        }
-        public static void Unload() {
-            On.Celeste.GameplayRenderer.ctor -= GameplayRenderer_ctor;
-            Everest.Events.Level.OnExit -= Level_OnExit;
-            On.Celeste.Level.ctor -= Level_ctor;
-
-        }
-
-        public static void ReloadBorder(Scene scene) {
-            if (mainInstance != null && scene != mainInstance.Scene) {
-                mainInstance.RemoveSelf();
-                mainInstance = null;
-            }
-
-            if (mainInstance == null) {
-                scene.Add(new DreamSpinnerBorder());
-            }
-        }
-
-        public static void LoadTextures() {
-            spinnerState = new DepthStencilState();
-            starState = new DepthStencilState();
-
-            mainTarget = new RenderTarget2D(Draw.SpriteBatch.GraphicsDevice, WIDTH, HEIGHT, false, SurfaceFormat.Color, DepthFormat.Depth16);
-
-            spinnerState.DepthBufferFunction = CompareFunction.Greater;
-            spinnerState.DepthBufferEnable = true;
-            spinnerState.DepthBufferWriteEnable = true;
-            spinnerState.StencilDepthBufferFail = StencilOperation.Keep;
-            spinnerState.StencilPass = StencilOperation.Replace;
-
-            starState.DepthBufferFunction = CompareFunction.Equal;
-            starState.DepthBufferEnable = true;
-            starState.DepthBufferWriteEnable = false;
-            starState.StencilDepthBufferFail = StencilOperation.Keep;
-            starState.StencilPass = StencilOperation.Keep;
-
-            spinnerMainTex = new Image(GFX.Game["isafriend/danger/crystal/fg_dream"]);
-            spinnerBGTex = new Image(GFX.Game["isafriend/danger/crystal/bg_dream"]);
-
-            starTextures = new Image[] {
-                new Image(GFX.Game["isafriend/danger/crystal/star0"]),
-                new Image(GFX.Game["isafriend/danger/crystal/star1"]),
-                new Image(GFX.Game["isafriend/danger/crystal/star2"]),
-                null
+            fgSpinnerImage = new Image(GFX.Game["isafriend/danger/crystal/fg_dream"]).CenterOrigin();
+            bgSpinnerImage = new Image(GFX.Game["isafriend/danger/crystal/bg_dream"]).CenterOrigin();
+            particleTextures = new MTexture[] {
+                GFX.Game["objects/dreamblock/particles"].GetSubtexture(14, 0, 7, 7),
+                GFX.Game["objects/dreamblock/particles"].GetSubtexture(7, 0, 7, 7),
+                GFX.Game["objects/dreamblock/particles"].GetSubtexture(0, 0, 7, 7),
+                GFX.Game["objects/dreamblock/particles"].GetSubtexture(7, 0, 7, 7)
             };
-            starTextures[3] = starTextures[1];
+        }
 
-            spinnerMainTex.CenterOrigin();
-            spinnerBGTex.CenterOrigin();
+        public override void Awake(Scene scene) {
+            base.Awake(scene);
 
-            try {
-                ModAsset asset = Everest.Content.Get("Effects/dream_border.cso");
-                borderEffect = new Effect(Draw.SpriteBatch.GraphicsDevice, asset.Data);
-
-                asset = Everest.Content.Get("Effects/dream_stars.cso");
-                starEffect = new Effect(Draw.SpriteBatch.GraphicsDevice, asset.Data);
-
-                asset = Everest.Content.Get("Effects/dream_spinners.cso");
-                spinnerEffect = new Effect(Draw.SpriteBatch.GraphicsDevice, asset.Data);
-            } catch (Exception e) {
-                Logger.Log(LogLevel.Error, "IsaGrabBag", "Failed to load the shader");
-                Logger.LogDetailed(e);
-            }
-
-            stars = new Star[starCount];
+            dreamDashEnabled = SceneAs<Level>().Session.Inventory.DreamDash;
 
             Calc.PushRandom(0x12F3);
-
-            for (int i = 0; i < starCount; ++i) {
-                int depth = i / depthDiv;
-                depth = 4 - depth;
-
-                float initAnim = 0;
-                if (depth < 2) {
-                    initAnim = Calc.Random.NextFloat(4f);
-                } else if (depth < 4) {
-                    initAnim = Calc.Random.NextFloat(2f);
-                }
-
-                stars[i] = new Star(
-                    new Vector2(Calc.Random.NextFloat(WIDTH), Calc.Random.NextFloat(HEIGHT)),
-                    depth, Calc.Random.NextFloat(1f) + 5f, initAnim, (byte)Calc.Random.Next(0, 7));
+            particles = new DreamParticle[ParticleCount];
+            for (int i = 0; i < particles.Length; i++) {
+                particles[i].Position = new Vector2(Calc.Random.NextFloat(320f), Calc.Random.NextFloat(180f));
+                particles[i].Layer = Calc.Random.Choose(0, 1, 1, 2, 2, 2);
+                particles[i].TimeOffset = Calc.Random.NextFloat();
+                particles[i].Color = particles[i].Layer switch {
+                    0 => Calc.Random.Choose(Calc.HexToColor("FFEF11"), Calc.HexToColor("FF00D0"), Calc.HexToColor("08a310")),
+                    1 => particles[i].Color = Calc.Random.Choose(Calc.HexToColor("5fcde4"), Calc.HexToColor("7fb25e"), Calc.HexToColor("E0564C")),
+                    2 => particles[i].Color = Calc.Random.Choose(Calc.HexToColor("5b6ee1"), Calc.HexToColor("CC3B3B"), Calc.HexToColor("7daa64")),
+                    _ => Color.LightGray
+                };
             }
 
             Calc.PopRandom();
         }
 
-        public override void Added(Scene scene) {
-            base.Added(scene);
+        public void BeforeRender() {
+            animTimer += 6f * Engine.DeltaTime;
 
-            camPos = SceneAs<Level>().Camera.Position;
-            camPos.X = (int)camPos.X;
-            camPos.Y = (int)camPos.Y;
-            lastCamPos = camPos;
-        }
+            hasDreamSpinners = Scene.Tracker.GetEntity<DreamSpinner>() != null;
 
-        public override void Awake(Scene scene) {
-            Update();
-            base.Awake(scene);
-        }
-
-        public override void Update() {
-            base.Update();
-
-            if (GrabBagModule.playerInstance != null && !GrabBagModule.playerInstance.Dead) {
-                dreamDashEnabled = GrabBagModule.playerInstance.Inventory.DreamDash;
-            }
-
-            if (dreamDashEnabled && mainInstance == this) {
-
-                for (int i = 0; i < starCount; ++i) {
-
-                    if (stars[i].depth < 2) {
-                        stars[i].anim += stars[i].animSpeed * Engine.DeltaTime;
-                        if (stars[i].anim >= 4) {
-                            stars[i].anim -= 4;
-                        }
-                    } else if (stars[i].depth < 4) {
-                        stars[i].anim += stars[i].animSpeed * Engine.DeltaTime;
-                        if (stars[i].anim >= 2) {
-                            stars[i].anim -= 2;
-                        }
-                    }
-                }
-            }
-
-            base.Update();
-        }
-
-        public override void Render() {
-            base.Render();
-
-            if (Scene.Entities.FindFirst<DreamSpinner>() == null) {
+            if (!hasDreamSpinners) {
                 return;
             }
 
-            camPos = SceneAs<Level>().Camera.Position;
-            camPos.X = (int)camPos.X;
-            camPos.Y = (int)camPos.Y;
+            dreamDashEnabled = SceneAs<Level>().Session.Inventory.DreamDash;
 
-            for (int i = 0; i < starCount; ++i) {
+            Camera camera = (Scene as Level).Camera;
 
-                Vector2 point = stars[i].point;
-                point -= (camPos - lastCamPos) * (5 - stars[i].depth) * 0.15f;
-                if (point.X < -4) {
-                    point.X += WIDTH + 4;
-                }
+            particlesTarget ??= VirtualContent.CreateRenderTarget("dream-spinner-renderer", 320, 180);
 
-                if (point.X >= WIDTH) {
-                    point.X -= WIDTH + 4;
-                }
+            Engine.Graphics.GraphicsDevice.SetRenderTarget(GameplayBuffers.TempA);
+            Engine.Graphics.GraphicsDevice.Clear(Color.Transparent);
+            Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix);
 
-                if (point.Y < -4) {
-                    point.Y += HEIGHT + 4;
-                }
-
-                if (point.Y >= HEIGHT) {
-                    point.Y -= HEIGHT + 4;
-                }
-
-                stars[i].point = point;
-
-            }
-
-            lastCamPos = camPos;
-
-            GameplayRenderer.End();
-            DrawTexture(false);
-            DrawTexture(true);
-            GameplayRenderer.Begin();
-        }
-
-        private static void Level_ctor(On.Celeste.Level.orig_ctor orig, Level self) {
-            orig(self);
-            ReloadBorder(self);
-        }
-
-        private static void Level_OnExit(Level level, LevelExit exit, LevelExit.Mode mode, Session session, HiresSnow snow) {
-            if (mainInstance != null) {
-                mainInstance.RemoveSelf();
-                mainInstance = null;
-            }
-        }
-        private static void GameplayRenderer_ctor(On.Celeste.GameplayRenderer.orig_ctor orig, GameplayRenderer self) {
-            orig(self);
-            gameplayInstance = self;
-        }
-
-        private void DrawTexture(bool isFragile) {
-            if (GrabBagModule.playerInstance != null && !GrabBagModule.playerInstance.Dead) {
-                dreamDashEnabled = GrabBagModule.playerInstance.Inventory.DreamDash;
-            }
-
-            GraphicsDevice gd = Draw.SpriteBatch.GraphicsDevice;
-
-            gd.SetRenderTarget(mainTarget);
-            gd.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.Transparent, 0f, 0);
-
-            // Start rendering dream spinners
-            Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, spinnerState, RasterizerState.CullNone,
-                spinnerEffect, gameplayInstance.Camera.Matrix);
-
-            spinnerMainTex.Color = !dreamDashEnabled ? new Color(25, 25, 25) : isFragile ? new Color(30, 22, 10) : Color.Black;
-
-            spinnerBGTex.Color = spinnerMainTex.Color;
-
-            foreach (DreamSpinner spin in Scene.Entities.FindAll<DreamSpinner>()) {
-                if (spin.Fragile != isFragile || !spin.InView()) {
+            foreach (DreamSpinner spinner in Scene.Tracker.GetEntities<DreamSpinner>()) {
+                if (!spinner.InView()) {
                     continue;
                 }
 
-                int type = spin.RNG;
+                fgSpinnerImage.SetRenderPosition(spinner.Position).SetColor(spinner.color).SetRotation(spinner.rotation);
+                fgSpinnerImage.Render();
+            }
 
-                spinnerMainTex.RenderPosition = spin.Position;
-                spinnerMainTex.Rotation = (type & 0x3) * MathHelper.PiOver2;
-
-                spinnerMainTex.Render();
-
-                foreach (Vector2 pos in spin.fillOffset) {
-                    spinnerBGTex.RenderPosition = pos;
-                    spinnerBGTex.Render();
+            foreach (DreamSpinner spinner in Scene.Tracker.GetEntities<DreamSpinner>()) {
+                if (!spinner.InView()) {
+                    continue;
                 }
+
+                bgSpinnerImage.SetColor(spinner.color).SetRotation(spinner.rotation);
+
+                spinner.offsets.ForEach(position => {
+                    bgSpinnerImage.SetRenderPosition(position);
+                    bgSpinnerImage.Render();
+                });
             }
 
             Draw.SpriteBatch.End();
 
-            // Draw stars on spinner
-            Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, starState, RasterizerState.CullNone,
-                starEffect, Matrix.Identity);
+            Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, DestinationAlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, Matrix.Identity);
 
-            Color[] array = !dreamDashEnabled ? colors[2] : isFragile ? colors[1] : colors[0];
+            for (int i = 0; i < particles.Length; i++) {
+                int layer = particles[i].Layer;
+                Color color = dreamDashEnabled ? particles[i].Color : Color.LightGray * (0.5f + (layer / 2f * 0.5f));
+                MTexture texture = layer switch {
+                    0 => particleTextures[3 - (int)(((particles[i].TimeOffset * 4f) + animTimer) % 4f)],
+                    1 => particleTextures[1 + (int)(((particles[i].TimeOffset * 2f) + animTimer) % 2f)],
+                    _ => particleTextures[2]
+                };
+                Vector2 vector = particles[i].Position - (camera.Position * (0.7f - (0.25f * layer)));
+                Vector2 position = new() {
+                    X = Utils.Mod(vector.X, 320f),
+                    Y = Utils.Mod(vector.Y, 180f)
+                };
 
-            for (int i = 0; i < starCount; ++i) {
-
-                Image image = starTextures[(int)stars[i].anim];
-                if (isFragile && stars[i].depth < 2) {
-                    image = starTextures[0];
-                }
-
-                image.Color = array[stars[i].color];
-                image.RenderPosition = stars[i].point;
-                image.Render();
+                texture.DrawCentered(position, color);
             }
 
             Draw.SpriteBatch.End();
 
-            gd.SetRenderTarget(GameplayBuffers.Gameplay);
+            Engine.Graphics.GraphicsDevice.SetRenderTarget(particlesTarget);
+            Engine.Graphics.GraphicsDevice.Clear(Color.Transparent);
+            Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix);
 
-            Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone,
-                borderEffect, gameplayInstance.Camera.Matrix);
+            foreach (DreamSpinner spinner in Scene.Tracker.GetEntities<DreamSpinner>()) {
+                if (!spinner.InView()) {
+                    continue;
+                }
 
-            if (!dreamDashEnabled) {
-                Draw.SpriteBatch.Draw(mainTarget, gameplayInstance.Camera.Position, Color.Gray);
-            } else if (isFragile) {
-                Draw.SpriteBatch.Draw(mainTarget, gameplayInstance.Camera.Position, Color.Orange * 0.9f);
-            } else {
-                Draw.SpriteBatch.Draw(mainTarget, gameplayInstance.Camera.Position, Color.White);
+                Color borderColor = !dreamDashEnabled ? Color.Gray : spinner.Fragile ? Color.Orange * 0.9f : Color.White;
+
+                fgSpinnerImage.SetRenderPosition(spinner.Position).SetColor(borderColor).SetRotation(spinner.rotation);
+                DrawBorder(fgSpinnerImage);
+
+                bgSpinnerImage.SetColor(borderColor).SetRotation(spinner.rotation);
+                spinner.offsets.ForEach(position => {
+                    bgSpinnerImage.SetRenderPosition(position);
+                    DrawBorder(bgSpinnerImage);
+                });
             }
+
+            Draw.SpriteBatch.Draw(GameplayBuffers.TempA, (Scene as Level).Camera.Position, Color.White);
 
             Draw.SpriteBatch.End();
         }
-    }
 
-    public struct Star {
-        public Star(Vector2 _pos, int _depth, float _animSpeed, float _initAnim, byte _color) {
-            point = _pos;
-            depth = _depth;
-            animSpeed = _animSpeed;
-            anim = _initAnim;
-            color = _color;
+        private void DrawBorder(Image image) {
+            Vector2 position = image.RenderPosition;
+            image.RenderPosition = position + new Vector2(0f, -1f);
+            image.Render();
+            image.RenderPosition = position + new Vector2(0f, 1f);
+            image.Render();
+            image.RenderPosition = position + new Vector2(-1f, 0f);
+            image.Render();
+            image.RenderPosition = position + new Vector2(1f, 0f);
+            image.Render();
         }
-        public Vector2 point;
-        public int depth;
-        public byte color;
-        public float anim, animSpeed;
+
+        public override void Render() {
+            if (hasDreamSpinners) {
+                Draw.SpriteBatch.Draw(particlesTarget, (Scene as Level).Camera.Position, Color.White);
+            }
+        }
+
+        public override void SceneEnd(Scene scene) {
+            base.SceneEnd(scene);
+            Dispose();
+        }
+
+        internal static void Load() {
+            On.Celeste.LevelLoader.LoadingThread += LevelLoader_LoadingThread;
+        }
+
+        internal static void Unload() {
+            On.Celeste.LevelLoader.LoadingThread -= LevelLoader_LoadingThread;
+        }
+
+        private static void LevelLoader_LoadingThread(On.Celeste.LevelLoader.orig_LoadingThread orig, LevelLoader self) {
+            self.Level.Add(new DreamSpinnerRenderer());
+            orig(self);
+        }
+
+        private void Dispose() {
+            if (particlesTarget?.IsDisposed ?? false) {
+                particlesTarget.Dispose();
+                particlesTarget = null;
+            }
+        }
+
+        public struct DreamParticle {
+            public Vector2 Position;
+            public int Layer;
+            public Color Color;
+            public float TimeOffset;
+        }
     }
 }
