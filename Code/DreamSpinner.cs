@@ -3,7 +3,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Monocle;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Celeste.Mod.IsaGrabBag {
     [Tracked]
@@ -259,9 +258,9 @@ namespace Celeste.Mod.IsaGrabBag {
             }
 
             foreach (DreamSpinner spinner in spinnersToRender) {
-                spinner.offsets.ForEach(bgPosition => {
-                    bgSpinnerTexture.Draw(bgPosition, origin, spinner.color, Vector2.One, spinner.rotation);
-                });
+                foreach (Vector2 bgOffset in spinner.offsets) {
+                    bgSpinnerTexture.Draw(bgOffset, origin, spinner.color, Vector2.One, spinner.rotation);
+                }
             }
         }
 
@@ -290,9 +289,9 @@ namespace Celeste.Mod.IsaGrabBag {
             foreach (DreamSpinner spinner in spinnersToRender) {
                 Color borderColor = !dreamDashEnabled ? Color.Gray : spinner.OneUse ? Color.Orange * 0.9f : Color.White;
                 DrawBorder(fgSpinnerTexture, spinner.Position, borderColor, spinner.rotation);
-                spinner.offsets.ForEach(bgPosition => {
-                    DrawBorder(bgSpinnerTexture, bgPosition, borderColor, spinner.rotation);
-                });
+                foreach (Vector2 bgOffset in spinner.offsets) {
+                    DrawBorder(bgSpinnerTexture, bgOffset, borderColor, spinner.rotation);
+                }
             }
         }
 
@@ -304,10 +303,14 @@ namespace Celeste.Mod.IsaGrabBag {
         }
 
         private List<DreamSpinner> GetSpinnersToRender() {
-            return Scene.Tracker.GetEntities<DreamSpinner>()
-                .OfType<DreamSpinner>()
-                .Where(spinner => spinner.InView())
-                .ToList();
+            List<DreamSpinner> spinnersToRender = new();
+            foreach (DreamSpinner spinner in Scene.Tracker.GetEntities<DreamSpinner>()) {
+                if (spinner.InView()) {
+                    spinnersToRender.Add(spinner);
+                }
+            }
+
+            return spinnersToRender;
         }
 
         private void Dispose() {
