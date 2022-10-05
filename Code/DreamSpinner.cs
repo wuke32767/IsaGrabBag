@@ -12,6 +12,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
         public bool OneUse;
         public bool Fake;
+        public bool ShouldRender;
 
         internal float rotation;
         internal Color color;
@@ -79,21 +80,22 @@ namespace Celeste.Mod.IsaGrabBag {
         public override void Update() {
             if (Fake) {
                 return;
-            } else if (!InView()){
+            } else if (!InView()) {
                 block.Active = false;
                 return;
             } else {
                 block.Active = true;
             }
 
-            Player player = GrabBagModule.playerInstance;
+            base.Update();
 
-            foreach (Actor deb in Scene.CollideAll<Actor>(block.Collider.Bounds)) {
-                if (deb is CrystalDebris) {
-                    deb.RemoveSelf();
+            foreach (Actor actor in Scene.CollideAll<Actor>(block.Collider.Bounds)) {
+                if (actor is CrystalDebris debris) {
+                    debris.RemoveSelf();
                 }
             }
 
+            Player player = GrabBagModule.playerInstance;
             if (player != null) {
                 if (OneUse) {
                     bool isColliding = block.Collidable && player.Collider.Collide(block);
@@ -144,6 +146,8 @@ namespace Celeste.Mod.IsaGrabBag {
         private readonly MTexture[] particleTextures;
         private readonly MTexture fgSpinnerTexture;
         private readonly MTexture bgSpinnerTexture;
+        private readonly MTexture fgBorderTexture;
+        private readonly MTexture bgBorderTexture;
 
         private VirtualRenderTarget dreamSpinnerTarget;
         private List<DreamSpinner> spinnersToRender;
@@ -158,6 +162,8 @@ namespace Celeste.Mod.IsaGrabBag {
 
             fgSpinnerTexture = GFX.Game["isafriend/danger/crystal/dreamSpinner"].GetSubtexture(0, 0, 24, 24);
             bgSpinnerTexture = GFX.Game["isafriend/danger/crystal/dreamSpinner"].GetSubtexture(24, 0, 24, 24);
+            fgBorderTexture = GFX.Game["isafriend/danger/crystal/dreamBorder"].GetSubtexture(0, 0, 24, 24);
+            bgBorderTexture = GFX.Game["isafriend/danger/crystal/dreamBorder"].GetSubtexture(24, 0, 24, 24);
             particleTextures = new MTexture[] {
                 GFX.Game["objects/dreamblock/particles"].GetSubtexture(14, 0, 7, 7),
                 GFX.Game["objects/dreamblock/particles"].GetSubtexture(7, 0, 7, 7),
@@ -255,11 +261,8 @@ namespace Celeste.Mod.IsaGrabBag {
         private void DrawSpinnerTextures() {
             foreach (DreamSpinner spinner in spinnersToRender) {
                 fgSpinnerTexture.Draw(spinner.Position, origin, spinner.color, Vector2.One, spinner.rotation);
-            }
-
-            foreach (DreamSpinner spinner in spinnersToRender) {
                 foreach (Vector2 bgOffset in spinner.offsets) {
-                    bgSpinnerTexture.Draw(bgOffset, origin, spinner.color, Vector2.One, spinner.rotation);
+                    bgSpinnerTexture.Draw(bgOffset, origin, spinner.color);
                 }
             }
         }
@@ -288,18 +291,11 @@ namespace Celeste.Mod.IsaGrabBag {
         private void DrawSpinnerBorders() {
             foreach (DreamSpinner spinner in spinnersToRender) {
                 Color borderColor = !dreamDashEnabled ? Color.Gray : spinner.OneUse ? Color.Orange * 0.9f : Color.White;
-                DrawBorder(fgSpinnerTexture, spinner.Position, borderColor, spinner.rotation);
+                fgBorderTexture.Draw(spinner.Position, origin, borderColor, Vector2.One, spinner.rotation);
                 foreach (Vector2 bgOffset in spinner.offsets) {
-                    DrawBorder(bgSpinnerTexture, bgOffset, borderColor, spinner.rotation);
+                    bgBorderTexture.Draw(bgOffset, origin, borderColor);
                 }
             }
-        }
-
-        private void DrawBorder(MTexture texture, Vector2 position, Color borderColor, float rotation){
-            texture.Draw(position - Vector2.UnitY, origin, borderColor, Vector2.One, rotation);
-            texture.Draw(position + Vector2.UnitY, origin, borderColor, Vector2.One, rotation);
-            texture.Draw(position - Vector2.UnitX, origin, borderColor, Vector2.One, rotation);
-            texture.Draw(position + Vector2.UnitX, origin, borderColor, Vector2.One, rotation);
         }
 
         private List<DreamSpinner> GetSpinnersToRender() {
