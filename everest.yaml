@@ -1,5 +1,5 @@
 ﻿- Name: IsaGrabBag
-  Version: 1.6.3
+  Version: 1.6.4
   DLL: Code/bin/IsaMods.dll
   Dependencies:
     - Name: Everest
