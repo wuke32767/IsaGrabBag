@@ -19,6 +19,9 @@ placements.entities.isaBag/rewindCrystal.tooltips.oneUse=Whether the refill shou
 # Water Boost Controller
 placements.entities.isaBag/waterBoost.tooltips.boostEnabled=Whether to enable waterboosting in the map.
 
+# Zipline
+placements.entities.isaBag/zipline.tooltips.usesStamina=Whether riding the zipline or jumping from it should consume stamina.
+
 # Core Wind Trigger
 placements.triggers.isaBag/coreWindTrigger.tooltips.patternHot=The wind pattern to use when the core mode is Hot.
 placements.triggers.isaBag/coreWindTrigger.tooltips.patternCold=The wind pattern to use when the core mode is Cold.

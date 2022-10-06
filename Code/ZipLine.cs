@@ -18,17 +18,20 @@ namespace Celeste.Mod.IsaGrabBag {
 
         private readonly float height;
         private readonly Sprite sprite;
+        private readonly bool usesStamina;
         private float speed;
         private bool grabbed;
 
-        public ZipLine(EntityData _data, Vector2 offset) : base(_data.Position + offset) {
-            Left = X;
-            Right = X;
+        public ZipLine(EntityData _data, Vector2 offset)
+            : base(_data.Position + offset) {
+            LeftEdge = X;
+            RightEdge = X;
             foreach (Vector2 node in _data.Nodes) {
-                Left = Math.Min(node.X + offset.X, Left);
-                Right = Math.Max(node.X + offset.X, Right);
+                LeftEdge = Math.Min(node.X + offset.X, LeftEdge);
+                RightEdge = Math.Max(node.X + offset.X, RightEdge);
             }
 
+            usesStamina = _data.Bool("usesStamina", true);
             height = (_data.Position + offset).Y;
             Collider = new Hitbox(20, 16, -10, 1);
             currentGrabbed = null;
@@ -41,21 +44,21 @@ namespace Celeste.Mod.IsaGrabBag {
         }
 
         public static bool GrabbingCoroutine => currentGrabbed != null && !currentGrabbed.grabbed;
-        public float Left { get; }
-        public float Right { get; }
+        public float LeftEdge { get; }
+        public float RightEdge { get; }
 
         public static void ZipLineBegin() {
             Player self = GrabBagModule.playerInstance;
             self.Ducking = false;
-
             self.Speed.Y = 0;
-
         }
+
         public static void ZipLineEnd() {
             currentGrabbed.grabbed = false;
             currentGrabbed = null;
             ziplineBuffer = 0.35f;
         }
+
         public static int ZipLineUpdate() {
             Player self = GrabBagModule.playerInstance;
 
@@ -87,12 +90,12 @@ namespace Celeste.Mod.IsaGrabBag {
             if (Input.Jump.Pressed) {
                 Input.Jump.ConsumePress();
 
-                self.Stamina -= 110f / 8f;
-
+                if (currentGrabbed.usesStamina) {
+                    self.Stamina -= 110f / 8f;
+                }
+                    
                 self.Speed.X *= 0.1f;
-
                 self.Jump(false, true);
-
                 self.LiftSpeed *= 0.4f;
                 //self.ResetLiftSpeed();
 
@@ -101,13 +104,13 @@ namespace Celeste.Mod.IsaGrabBag {
                 return Player.StNormal;
             }
 
-            if (self.CanDash) {
-
-                self.StartDash();
-                return Player.StDash;
+            if (self.CanDash) {                
+                return self.StartDash();
             }
 
-            self.Stamina -= 5 * Engine.DeltaTime;
+            if (currentGrabbed.usesStamina) {
+                self.Stamina -= 5 * Engine.DeltaTime;
+            }            
 
             return GrabBagModule.ZipLineState;
         }
@@ -123,7 +126,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
             Vector2 playerLerp = new((self.X + currentGrabbed.X) / 2f, currentGrabbed.Y + 22);
 
-            playerLerp.X = MathHelper.Clamp(playerLerp.X, currentGrabbed.Left, currentGrabbed.Right);
+            playerLerp.X = MathHelper.Clamp(playerLerp.X, currentGrabbed.LeftEdge, currentGrabbed.RightEdge);
             Vector2 zipLerp = new(playerLerp.X, currentGrabbed.Y);
 
             Vector2 playerInit = self.Position,
@@ -154,7 +157,6 @@ namespace Celeste.Mod.IsaGrabBag {
             orig(self);
 
             ziplineBuffer = Calc.Approach(ziplineBuffer, 0, Engine.DeltaTime);
-
             if (!Input.GrabCheck) {
                 ziplineBuffer = 0;
             }
@@ -179,13 +181,12 @@ namespace Celeste.Mod.IsaGrabBag {
                     player.LiftSpeedGraceTime = 0.2f;
                 }
 
-                if (player.CenterX > Right || player.CenterX < Left) {
+                if (player.CenterX > RightEdge || player.CenterX < LeftEdge) {
                     player.Speed.X = 0;
                 }
 
-                player.CenterX = MathHelper.Clamp(player.CenterX, Left, Right);
+                player.CenterX = MathHelper.Clamp(player.CenterX, LeftEdge, RightEdge);
                 Position.X = player.CenterX;
-
                 Position.Y = height;
             } else {
                 if (currentGrabbed == null && player != null && !player.Dead && player.CanUnDuck && Input.GrabCheck && CanGrabZip(this)) {
@@ -199,7 +200,7 @@ namespace Celeste.Mod.IsaGrabBag {
                 }
 
                 Position.X += speed * Engine.DeltaTime;
-                Position.X = MathHelper.Clamp(Position.X, Left, Right);
+                Position.X = MathHelper.Clamp(Position.X, LeftEdge, RightEdge);
                 Position.Y = height;
             }
         }
@@ -249,7 +250,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
             Position = zipInst.Position;
 
-            Rectangle tempRect = new((int)zipInst.Left, (int)zipInst.Y, (int)(zipInst.Right - zipInst.Left), 1);
+            Rectangle tempRect = new((int)zipInst.LeftEdge, (int)zipInst.Y, (int)(zipInst.RightEdge - zipInst.LeftEdge), 1);
             tempRect.Inflate(8, 0);
 
             renderList.Add(new RenderRectangle(tempRect, darkLine));

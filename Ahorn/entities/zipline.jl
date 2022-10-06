@@ -2,7 +2,7 @@ module IsaGrabBagZipline
 
 using ..Ahorn, Maple
 
-@mapdef Entity "isaBag/zipline" Zipline(x::Integer, y::Integer, nodes::Array{Tuple{Integer, Integer}, 1}=Tuple{Integer, Integer}[])
+@mapdef Entity "isaBag/zipline" Zipline(x::Integer, y::Integer, nodes::Array{Tuple{Integer, Integer}, 1}=Tuple{Integer, Integer}[], usesStamina::Bool=true)
 
 const placements = Ahorn.PlacementDict(
 	"Zipline (IsaGrabBag)" => Ahorn.EntityPlacement(
