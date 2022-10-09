@@ -232,7 +232,7 @@ namespace Celeste.Mod.IsaGrabBag {
             int nodeIndex = boostData.Get<int>("nodeIndex");
             Vector2[] nodes = boostData.Get<Vector2[]>("nodes");
             Sprite sprite = boostData.Get<Sprite>("sprite");
-            Image stretch = boostData.Get<Sprite>("stretch");
+            Image stretch = boostData.Get<Image>("stretch");
 
             Level level = booster.Scene as Level;
 
