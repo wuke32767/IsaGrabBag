@@ -21,6 +21,7 @@ placements.entities.isaBag/waterBoost.tooltips.boostEnabled=Whether to enable wa
 
 # Zipline
 placements.entities.isaBag/zipline.tooltips.usesStamina=Whether riding the zipline or jumping from it should consume stamina.
+placements.entities.isaBag/zipline.tooltips.flag=The flag to enable when the player uses the zipline. Leave empty if you don't want any flag to be set.
 
 # Core Wind Trigger
 placements.triggers.isaBag/coreWindTrigger.tooltips.patternHot=The wind pattern to use when the core mode is Hot.
