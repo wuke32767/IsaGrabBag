@@ -9,7 +9,6 @@ namespace Celeste.Mod.IsaGrabBag {
     public class ArrowBlock : Solid {
         private const float MoveSpeed = 500;
         private const float TurnSpeed = 750;
-        private const bool JoystickAlways = false;
 
         private readonly ArrowDirection limitation;
         private readonly List<Image> idleImages = new();
@@ -80,7 +79,6 @@ namespace Celeste.Mod.IsaGrabBag {
         public int InvertVal => Inverted ? -1 : 1;
         public bool Inverted { get; private set; }
         public int Distance { get; private set; }
-        private bool UseAnalog => (JoystickAlways || SaveData.Instance.Assists.ThreeSixtyDashing) && limitation != ArrowDirection.cardinal && limitation != ArrowDirection.diagonal;
 
         public override void Render() {
             Rectangle rect = Collider.Bounds;
@@ -161,20 +159,21 @@ namespace Celeste.Mod.IsaGrabBag {
 
         /// <summary>
         /// Get the direction the player is holding, snapped to eight directions and normalized,
-        /// or the zero vector if no direction is held.
+        /// or the zero vector if no direction is held. Mostly copied from Celeste.Input.GetAimVector().
         /// </summary>
         /// <returns>A normalized vector on a cardinal or diagonal or the zero vector.</returns>
         private static Vector2 GetEightDirectionalAim() {
-            // mostly copied from Celeste.Input.GetAimVector()
-            Vector2 value = Input.Aim.Value;
+            Vector2 value = Input.Feather.Value;
             if (value == Vector2.Zero) {
                 return Vector2.Zero;
             }
+
             float angle = value.Angle();
             float angleThreshold = (float)Math.PI / 8f;
             if (angle < 0) {
-                angleThreshold -= 0.08726646f; // ca 5° in radians (copied from GetAimVector)
+                angleThreshold -= Calc.ToRad(5f);
             }
+
             if (Calc.AbsAngleDiff(angle, 0f) < angleThreshold) {
                 return new Vector2(1f, 0f);
             } else if (Calc.AbsAngleDiff(angle, (float)Math.PI) < angleThreshold) {
@@ -194,12 +193,10 @@ namespace Celeste.Mod.IsaGrabBag {
             }
 
             Vector2 move;
-
-            if (UseAnalog && limitation == ArrowDirection.no_limit) {
+            if (SaveData.Instance.Assists.ThreeSixtyDashing && limitation == ArrowDirection.no_limit) {
                 move = Input.Feather.Value.SafeNormalize();
             } else {
                 move = GetEightDirectionalAim();
-
                 switch (limitation) {
                     case ArrowDirection.horizontal:
                         move.Y = 0;
