@@ -9,7 +9,6 @@ namespace Celeste.Mod.IsaGrabBag {
     public class ArrowBlock : Solid {
         private const float MoveSpeed = 500;
         private const float TurnSpeed = 750;
-        private const bool JoystickAlways = false;
 
         private readonly ArrowDirection limitation;
         private readonly List<Image> idleImages = new();
@@ -80,7 +79,6 @@ namespace Celeste.Mod.IsaGrabBag {
         public int InvertVal => Inverted ? -1 : 1;
         public bool Inverted { get; private set; }
         public int Distance { get; private set; }
-        private bool UseAnalog => (JoystickAlways || SaveData.Instance.Assists.ThreeSixtyDashing) && limitation != ArrowDirection.cardinal && limitation != ArrowDirection.diagonal;
 
         public override void Render() {
             Rectangle rect = Collider.Bounds;
@@ -159,45 +157,74 @@ namespace Celeste.Mod.IsaGrabBag {
             base.Render();
         }
 
+        /// <summary>
+        /// Get the direction the player is holding, snapped to eight directions and normalized,
+        /// or the zero vector if no direction is held. Mostly copied from Celeste.Input.GetAimVector().
+        /// </summary>
+        /// <returns>A normalized vector on a cardinal or diagonal or the zero vector.</returns>
+        private static Vector2 GetEightDirectionalAim() {
+            Vector2 value = Input.Feather.Value;
+            if (value == Vector2.Zero) {
+                return Vector2.Zero;
+            }
+
+            float angle = value.Angle();
+            float angleThreshold = (float)Math.PI / 8f;
+            if (angle < 0) {
+                angleThreshold -= Calc.ToRad(5f);
+            }
+
+            if (Calc.AbsAngleDiff(angle, 0f) < angleThreshold) {
+                return new Vector2(1f, 0f);
+            } else if (Calc.AbsAngleDiff(angle, (float)Math.PI) < angleThreshold) {
+                return new Vector2(-1f, 0f);
+            } else if (Calc.AbsAngleDiff(angle, -(float)Math.PI / 2f) < angleThreshold) {
+                return new Vector2(0f, -1f);
+            } else if (Calc.AbsAngleDiff(angle, (float)Math.PI / 2f) < angleThreshold) {
+                return new Vector2(0f, 1f);
+            } else {
+                return new Vector2(Math.Sign(value.X), Math.Sign(value.Y)).SafeNormalize();
+            }
+        }
+
         private Vector2 GetOffsetPosition() {
             if (GrabBagModule.playerInstance == null || GrabBagModule.playerInstance.Dead) {
                 return Vector2.Zero;
             }
 
-            Vector2 move = UseAnalog ? Input.Feather.Value : new Vector2(Input.MoveX, Input.MoveY);
+            Vector2 move;
+            if (SaveData.Instance.Assists.ThreeSixtyDashing && limitation == ArrowDirection.no_limit) {
+                move = Input.Feather.Value.SafeNormalize();
+            } else {
+                move = GetEightDirectionalAim();
+                switch (limitation) {
+                    case ArrowDirection.horizontal:
+                        move.Y = 0;
+                        if (move.X != 0) {
+                            move.X = Math.Sign(move.X);
+                        }
 
-            if (move.X != 0 || move.Y != 0) {
-                move.Normalize();
-            }
+                        break;
+                    case ArrowDirection.vertical:
+                        move.X = 0;
+                        if (move.Y != 0) {
+                            move.Y = Math.Sign(move.Y);
+                        }
 
-            switch (limitation) {
-                case ArrowDirection.horizontal:
-                    move.Y = 0;
-                    if (move.X != 0) {
-                        move.X = Math.Sign(move.X);
-                    }
+                        break;
+                    case ArrowDirection.cardinal:
+                        if (move.X != 0 && move.Y != 0) {
+                            move = Vector2.Zero;
+                        }
 
-                    break;
-                case ArrowDirection.vertical:
-                    move.X = 0;
-                    if (move.Y != 0) {
-                        move.Y = Math.Sign(move.Y);
-                    }
+                        break;
+                    case ArrowDirection.diagonal:
+                        if (move.X == 0 || move.Y == 0) {
+                            move = Vector2.Zero;
+                        }
 
-                    break;
-                case ArrowDirection.cardinal:
-                    if (move.X != 0 && move.Y != 0) {
-                        move = Vector2.Zero;
-                    }
-
-                    break;
-                case ArrowDirection.diagonal:
-                    move = move.Rotate(MathHelper.PiOver4);
-                    move = Math.Abs(move.X) > 0.001f && Math.Abs(move.Y) > 0.001f ? Vector2.Zero : move.Rotate(-MathHelper.PiOver4);
-
-                    break;
-                default:
-                    break;
+                        break;
+                }
             }
 
             return move * InvertVal;
