@@ -19,7 +19,6 @@ namespace Celeste.Mod.IsaGrabBag {
         private readonly float height;
         private readonly Sprite sprite;
         private readonly bool usesStamina;
-        private readonly string flag;
         private float speed;
         private bool grabbed;
 
@@ -38,8 +37,6 @@ namespace Celeste.Mod.IsaGrabBag {
             currentGrabbed = null;
             Depth = -500;
 
-            flag = _data.Attr("flag", null)?.Trim();
-
             sprite = GrabBagModule.sprites.Create("zipline");
             sprite.Play("idle");
             sprite.JustifyOrigin(new Vector2(0.5f, 0.25f));
@@ -54,11 +51,6 @@ namespace Celeste.Mod.IsaGrabBag {
             Player self = GrabBagModule.playerInstance;
             self.Ducking = false;
             self.Speed.Y = 0;
-
-            // set flag
-            string flag = currentGrabbed.flag;
-            if (!string.IsNullOrWhiteSpace(flag))
-                self.SceneAs<Level>().Session.SetFlag(flag);
         }
 
         public static void ZipLineEnd() {
