@@ -159,45 +159,75 @@ namespace Celeste.Mod.IsaGrabBag {
             base.Render();
         }
 
+        /// <summary>
+        /// Get the direction the player is holding, snapped to eight directions and normalized,
+        /// or the zero vector if no direction is held.
+        /// </summary>
+        /// <returns>A normalized vector on a cardinal or diagonal or the zero vector.</returns>
+        private static Vector2 GetEightDirectionalAim() {
+            // mostly copied from Celeste.Input.GetAimVector()
+            Vector2 value = Input.Aim.Value;
+            if (value == Vector2.Zero) {
+                return Vector2.Zero;
+            }
+            float angle = value.Angle();
+            float angleThreshold = (float)Math.PI / 8f;
+            if (angle < 0) {
+                angleThreshold -= 0.08726646f; // ca 5° in radians (copied from GetAimVector)
+            }
+            if (Calc.AbsAngleDiff(angle, 0f) < angleThreshold) {
+                return new Vector2(1f, 0f);
+            } else if (Calc.AbsAngleDiff(angle, (float)Math.PI) < angleThreshold) {
+                return new Vector2(-1f, 0f);
+            } else if (Calc.AbsAngleDiff(angle, -(float)Math.PI / 2f) < angleThreshold) {
+                return new Vector2(0f, -1f);
+            } else if (Calc.AbsAngleDiff(angle, (float)Math.PI / 2f) < angleThreshold) {
+                return new Vector2(0f, 1f);
+            } else {
+                return new Vector2(Math.Sign(value.X), Math.Sign(value.Y)).SafeNormalize();
+            }
+        }
+
         private Vector2 GetOffsetPosition() {
             if (GrabBagModule.playerInstance == null || GrabBagModule.playerInstance.Dead) {
                 return Vector2.Zero;
             }
 
-            Vector2 move = UseAnalog ? Input.Feather.Value : new Vector2(Input.MoveX, Input.MoveY);
+            Vector2 move;
 
-            if (move.X != 0 || move.Y != 0) {
-                move.Normalize();
-            }
+            if (UseAnalog && limitation == ArrowDirection.no_limit) {
+                move = Input.Feather.Value.SafeNormalize();
+            } else {
+                move = GetEightDirectionalAim();
 
-            switch (limitation) {
-                case ArrowDirection.horizontal:
-                    move.Y = 0;
-                    if (move.X != 0) {
-                        move.X = Math.Sign(move.X);
-                    }
+                switch (limitation) {
+                    case ArrowDirection.horizontal:
+                        move.Y = 0;
+                        if (move.X != 0) {
+                            move.X = Math.Sign(move.X);
+                        }
 
-                    break;
-                case ArrowDirection.vertical:
-                    move.X = 0;
-                    if (move.Y != 0) {
-                        move.Y = Math.Sign(move.Y);
-                    }
+                        break;
+                    case ArrowDirection.vertical:
+                        move.X = 0;
+                        if (move.Y != 0) {
+                            move.Y = Math.Sign(move.Y);
+                        }
 
-                    break;
-                case ArrowDirection.cardinal:
-                    if (move.X != 0 && move.Y != 0) {
-                        move = Vector2.Zero;
-                    }
+                        break;
+                    case ArrowDirection.cardinal:
+                        if (move.X != 0 && move.Y != 0) {
+                            move = Vector2.Zero;
+                        }
 
-                    break;
-                case ArrowDirection.diagonal:
-                    move = move.Rotate(MathHelper.PiOver4);
-                    move = Math.Abs(move.X) > 0.001f && Math.Abs(move.Y) > 0.001f ? Vector2.Zero : move.Rotate(-MathHelper.PiOver4);
+                        break;
+                    case ArrowDirection.diagonal:
+                        if (move.X == 0 || move.Y == 0) {
+                            move = Vector2.Zero;
+                        }
 
-                    break;
-                default:
-                    break;
+                        break;
+                }
             }
 
             return move * InvertVal;
