@@ -80,6 +80,46 @@ namespace Celeste.Mod.IsaGrabBag {
         public bool Inverted { get; private set; }
         public int Distance { get; private set; }
 
+        public override void Update() {
+            base.Update();
+
+            previousDirection = GetOffsetPosition();
+
+            Vector2 newPos = GetOffsetPosition() * Distance;
+            Vector2 dir = newPos - localPos;
+            if (dir.X != 0 || dir.Y != 0) {
+                dir.Normalize();
+            }
+
+            moveDir += dir * Engine.DeltaTime * TurnSpeed;
+            if (moveDir.Length() > MoveSpeed) {
+                moveDir = moveDir.SafeNormalize() * MoveSpeed;
+            }
+
+            if (Calc.AbsAngleDiff(moveDir.Angle(), dir.Angle()) > MathHelper.PiOver2) {
+                moveDir = Vector2.Zero;
+            }
+
+            Vector2 movement = moveDir * Engine.DeltaTime;
+
+            if (Vector2.Distance(localPos, newPos) < movement.Length()) {
+                localPos = newPos;
+                moveDir = Vector2.Zero;
+            } else {
+                localPos += movement;
+            }
+
+            if (localPos.Length() > Distance) {
+                localPos.Normalize();
+                localPos *= Distance;
+                moveDir = Vector2.Zero;
+            }
+
+            glowDirection = Calc.Approach(glowDirection, previousDirection, 10 * Engine.DeltaTime);
+
+            MoveTo(originalPosition + localPos);
+        }
+
         public override void Render() {
             Rectangle rect = Collider.Bounds;
 
@@ -230,45 +270,6 @@ namespace Celeste.Mod.IsaGrabBag {
             return move * InvertVal;
         }
 
-        public override void Update() {
-            base.Update();
-
-            previousDirection = GetOffsetPosition();
-
-            Vector2 newPos = GetOffsetPosition() * Distance;
-            Vector2 dir = newPos - localPos;
-            if (dir.X != 0 || dir.Y != 0) {
-                dir.Normalize();
-            }
-
-            moveDir += dir * Engine.DeltaTime * TurnSpeed;
-            if (moveDir.Length() > MoveSpeed) {
-                moveDir = moveDir.SafeNormalize() * MoveSpeed;
-            }
-
-            if (Calc.AbsAngleDiff(moveDir.Angle(), dir.Angle()) > MathHelper.PiOver2) {
-                moveDir = Vector2.Zero;
-            }
-
-            Vector2 movement = moveDir * Engine.DeltaTime;
-
-            if (Vector2.Distance(localPos, newPos) < movement.Length()) {
-                localPos = newPos;
-                moveDir = Vector2.Zero;
-            } else {
-                localPos += movement;
-            }
-
-            if (localPos.Length() > Distance) {
-                localPos.Normalize();
-                localPos *= Distance;
-                moveDir = Vector2.Zero;
-            }
-
-            glowDirection = Calc.Approach(glowDirection, previousDirection, 10 * Engine.DeltaTime);
-
-            MoveTo(originalPosition + localPos);
-        }
         private void AddImage(MTexture idle, int x, int y, int tx, int ty, int borderX = 0, int borderY = 0) {
             MTexture subtexture = idle.GetSubtexture(tx * 8, ty * 8, 8, 8, null);
             Vector2 vector = new(x * 8, y * 8);
