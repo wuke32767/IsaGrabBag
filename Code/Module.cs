@@ -31,9 +31,6 @@ namespace Celeste.Mod.IsaGrabBag {
             }
         }
 
-        public static int ZipLineState { get; private set; }
-        public static int ArrowBlockState { get; private set; }
-
         public override Type SessionType => typeof(IsaSession);
         public static IsaSession Session => (IsaSession)Instance._Session;
 
@@ -48,6 +45,7 @@ namespace Celeste.Mod.IsaGrabBag {
             DreamSpinnerRenderer.Load();
             ForceVariants.Load();
             RewindCrystal.Load();
+            ZipLine.Load();
 
             Everest.Events.Level.OnTransitionTo += Level_OnTransitionTo;
             Everest.Events.Level.OnEnter += Level_OnEnter;
@@ -55,9 +53,6 @@ namespace Celeste.Mod.IsaGrabBag {
             Everest.Events.Level.OnLoadEntity += Level_OnLoadEntity;
             Everest.Events.Player.OnSpawn += Player_OnSpawn;
 
-            On.Celeste.Player.ctor += PlayerInit;
-            On.Celeste.Player.UpdateSprite += UpdatePlayerVisuals;
-            On.Celeste.Player.Update += ZipLine.OnPlayerUpdate;
             On.Celeste.BadelineBoost.Awake += BadelineBoostAwake;
             On.Celeste.ChangeRespawnTrigger.OnEnter += OnChangeRespawn;
         }
@@ -67,15 +62,13 @@ namespace Celeste.Mod.IsaGrabBag {
             DreamSpinnerRenderer.Unload();
             ForceVariants.Unload();
             RewindCrystal.Unload();
+            ZipLine.Unload();
 
             Everest.Events.Level.OnEnter -= Level_OnEnter;
             Everest.Events.Level.OnExit -= Level_OnExit;
             Everest.Events.Level.OnLoadEntity -= Level_OnLoadEntity;
             Everest.Events.Player.OnSpawn -= Player_OnSpawn;
 
-            On.Celeste.Player.ctor -= PlayerInit;
-            On.Celeste.Player.UpdateSprite -= UpdatePlayerVisuals;
-            On.Celeste.Player.Update -= ZipLine.OnPlayerUpdate;
             On.Celeste.BadelineBoost.Awake -= BadelineBoostAwake;
             On.Celeste.ChangeRespawnTrigger.OnEnter -= OnChangeRespawn;
         }
@@ -87,33 +80,10 @@ namespace Celeste.Mod.IsaGrabBag {
             }
         }
 
-        private void UpdatePlayerVisuals(On.Celeste.Player.orig_UpdateSprite orig, Player self) {
-            if (self.StateMachine == ZipLineState) {
-                self.Sprite.Scale.X = Calc.Approach(self.Sprite.Scale.X, 1f, 1.75f * Engine.DeltaTime);
-                self.Sprite.Scale.Y = Calc.Approach(self.Sprite.Scale.Y, 1f, 1.75f * Engine.DeltaTime);
-
-                if (ZipLine.GrabbingCoroutine) {
-                    return;
-                }
-
-                self.Sprite.PlayOffset("fallSlow_carry", .5f, false);
-                self.Sprite.Rate = 0.0f;
-
-            } else {
-                orig(self);
-            }
-        }
-
         private void OnChangeRespawn(On.Celeste.ChangeRespawnTrigger.orig_OnEnter orig, ChangeRespawnTrigger self, Player player) {
             orig(self, player);
 
             ForceVariants.SaveToSession();
-        }
-
-        private void PlayerInit(On.Celeste.Player.orig_ctor orig, Player self, Vector2 position, PlayerSpriteMode spriteMode) {
-            orig(self, position, spriteMode);
-
-            ZipLineState = self.StateMachine.AddState(ZipLine.ZipLineUpdate, begin: ZipLine.ZipLineBegin, end: ZipLine.ZipLineEnd, coroutine: ZipLine.ZipLineCoroutine);
         }
 
         public override void LoadContent(bool firstLoad) {

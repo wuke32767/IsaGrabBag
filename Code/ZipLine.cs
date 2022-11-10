@@ -43,23 +43,119 @@ namespace Celeste.Mod.IsaGrabBag {
             Add(sprite);
         }
 
+        public static int ZipLineState { get; private set; }
         public static bool GrabbingCoroutine => currentGrabbed != null && !currentGrabbed.grabbed;
         public float LeftEdge { get; }
         public float RightEdge { get; }
 
-        public static void ZipLineBegin() {
+        public override void Added(Scene scene) {
+            base.Added(scene);
+            scene.Add(new ZipLineRender(this));
+        }
+
+        public override void Update() {
+            base.Update();
+            Player player = GrabBagModule.playerInstance;
+
+            if (player == null || player.Dead) {
+                return;
+            }
+
+            if (grabbed) {
+                if (player.Speed.X > 20) {
+                    player.LiftSpeed = player.Speed;
+                    player.LiftSpeedGraceTime = 0.2f;
+                }
+
+                if (player.CenterX > RightEdge || player.CenterX < LeftEdge) {
+                    player.Speed.X = 0;
+                }
+
+                player.CenterX = MathHelper.Clamp(player.CenterX, LeftEdge, RightEdge);
+                Position.X = player.CenterX;
+                Position.Y = height;
+            } else {
+                if (currentGrabbed == null && player != null && !player.Dead && player.CanUnDuck && Input.GrabCheck && CanGrabZip(this)) {
+                    bool isTired = DynamicData.For(player).Get<bool>("IsTired");
+                    if (player.CollideCheck(this) && !isTired) {
+                        currentGrabbed = this;
+                        lastGrabbed = currentGrabbed;
+                        player.StateMachine.State = ZipLineState;
+                    }
+                }
+
+                Position.X += speed * Engine.DeltaTime;
+                Position.X = MathHelper.Clamp(Position.X, LeftEdge, RightEdge);
+                Position.Y = height;
+            }
+        }
+
+        public override void Render() {
+            if (grabbed) {
+                sprite.Visible = true;
+                sprite.Play(GrabBagModule.playerInstance.Facing == Facings.Left ? "held_l" : "held_r");
+            } else {
+                sprite.Visible = false;
+            }
+
+            base.Render();
+        }
+
+        internal static void Load() {
+            On.Celeste.Player.ctor += PlayerInit;
+            On.Celeste.Player.Update += OnPlayerUpdate;
+            On.Celeste.Player.UpdateSprite += UpdatePlayerVisuals;
+        }
+
+        internal static void Unload() {
+            On.Celeste.Player.ctor -= PlayerInit;
+            On.Celeste.Player.Update -= OnPlayerUpdate;
+            On.Celeste.Player.UpdateSprite -= UpdatePlayerVisuals;
+        }
+
+        private static void PlayerInit(On.Celeste.Player.orig_ctor orig, Player self, Vector2 position, PlayerSpriteMode spriteMode) {
+            orig(self, position, spriteMode);
+            ZipLineState = self.StateMachine.AddState(ZipLineUpdate, ZipLineCoroutine, ZipLineBegin, ZipLineEnd);
+        }
+
+        private static void OnPlayerUpdate(On.Celeste.Player.orig_Update orig, Player self) {
+            orig(self);
+
+            ziplineBuffer = Calc.Approach(ziplineBuffer, 0, Engine.DeltaTime);
+            if (!Input.GrabCheck) {
+                ziplineBuffer = 0;
+            }
+        }
+
+        private static void UpdatePlayerVisuals(On.Celeste.Player.orig_UpdateSprite orig, Player self) {
+            if (ZipLineState > Player.StIntroThinkForABit && self.StateMachine == ZipLineState) {
+                self.Sprite.Scale.X = Calc.Approach(self.Sprite.Scale.X, 1f, 1.75f * Engine.DeltaTime);
+                self.Sprite.Scale.Y = Calc.Approach(self.Sprite.Scale.Y, 1f, 1.75f * Engine.DeltaTime);
+
+                if (GrabbingCoroutine) {
+                    return;
+                }
+
+                self.Sprite.PlayOffset("fallSlow_carry", .5f, false);
+                self.Sprite.Rate = 0.0f;
+            } else {
+                orig(self);
+            }
+        }
+
+        private static void ZipLineBegin() {
             Player self = GrabBagModule.playerInstance;
             self.Ducking = false;
             self.Speed.Y = 0;
         }
 
-        public static void ZipLineEnd() {
+        private static void ZipLineEnd() {
             currentGrabbed.grabbed = false;
             currentGrabbed = null;
             ziplineBuffer = 0.35f;
         }
 
-        public static int ZipLineUpdate() {
+        private static int ZipLineUpdate() {
             Player self = GrabBagModule.playerInstance;
 
             if (currentGrabbed == null) {
@@ -67,7 +163,7 @@ namespace Celeste.Mod.IsaGrabBag {
             }
 
             if (!currentGrabbed.grabbed) {
-                return GrabBagModule.ZipLineState;
+                return ZipLineState;
             }
 
             currentGrabbed.speed = self.Speed.X;
@@ -93,28 +189,28 @@ namespace Celeste.Mod.IsaGrabBag {
                 if (currentGrabbed.usesStamina) {
                     self.Stamina -= 110f / 8f;
                 }
-                    
+
                 self.Speed.X *= 0.1f;
                 self.Jump(false, true);
                 self.LiftSpeed *= 0.4f;
-                //self.ResetLiftSpeed();
 
                 currentGrabbed.speed = Calc.Approach(currentGrabbed.speed, 0, 20);
 
                 return Player.StNormal;
             }
 
-            if (self.CanDash) {                
+            if (self.CanDash) {
                 return self.StartDash();
             }
 
             if (currentGrabbed.usesStamina) {
                 self.Stamina -= 5 * Engine.DeltaTime;
-            }            
+            }
 
-            return GrabBagModule.ZipLineState;
+            return ZipLineState;
         }
-        public static IEnumerator ZipLineCoroutine() {
+
+        private static IEnumerator ZipLineCoroutine() {
             Player self = GrabBagModule.playerInstance;
             Vector2 speed = self.Speed;
             self.Speed = Vector2.Zero;
@@ -151,69 +247,6 @@ namespace Celeste.Mod.IsaGrabBag {
             currentGrabbed.Position = zipLerp;
 
             yield break;
-        }
-
-        public static void OnPlayerUpdate(On.Celeste.Player.orig_Update orig, Player self) {
-            orig(self);
-
-            ziplineBuffer = Calc.Approach(ziplineBuffer, 0, Engine.DeltaTime);
-            if (!Input.GrabCheck) {
-                ziplineBuffer = 0;
-            }
-        }
-
-        public override void Added(Scene scene) {
-            base.Added(scene);
-            scene.Add(new ZipLineRender(this));
-        }
-
-        public override void Update() {
-            base.Update();
-            Player player = GrabBagModule.playerInstance;
-
-            if (player == null || player.Dead) {
-                return;
-            }
-
-            if (grabbed) {
-                if (player.Speed.X > 20) {
-                    player.LiftSpeed = player.Speed;
-                    player.LiftSpeedGraceTime = 0.2f;
-                }
-
-                if (player.CenterX > RightEdge || player.CenterX < LeftEdge) {
-                    player.Speed.X = 0;
-                }
-
-                player.CenterX = MathHelper.Clamp(player.CenterX, LeftEdge, RightEdge);
-                Position.X = player.CenterX;
-                Position.Y = height;
-            } else {
-                if (currentGrabbed == null && player != null && !player.Dead && player.CanUnDuck && Input.GrabCheck && CanGrabZip(this)) {
-                    bool isTired = DynamicData.For(player).Get<bool>("IsTired");
-                    if (player.CollideCheck(this) && !isTired) {
-                        currentGrabbed = this;
-                        lastGrabbed = currentGrabbed;
-                        player.StateMachine.State = GrabBagModule.ZipLineState;
-
-                    }
-                }
-
-                Position.X += speed * Engine.DeltaTime;
-                Position.X = MathHelper.Clamp(Position.X, LeftEdge, RightEdge);
-                Position.Y = height;
-            }
-        }
-
-        public override void Render() {
-            if (grabbed) {
-                sprite.Visible = true;
-                sprite.Play(GrabBagModule.playerInstance.Facing == Facings.Left ? "held_l" : "held_r");
-            } else {
-                sprite.Visible = false;
-            }
-
-            base.Render();
         }
 
         private static void MoveEntityTo(Actor ent, Vector2 position) {
