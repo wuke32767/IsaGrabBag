@@ -9,6 +9,8 @@ using System.Collections.Generic;
 namespace Celeste.Mod.IsaGrabBag {
     [CustomEntity("isaBag/zipline")]
     public class ZipLine : Entity {
+        public static readonly string NeverUsedZiplineFlag = "IsaGrabBag_NeverUsedZipline";
+
         private const float ZIP_SPEED = 120f;
         private const float ZIP_ACCEL = 190f;
         private const float ZIP_TURN = 250f;
@@ -102,15 +104,32 @@ namespace Celeste.Mod.IsaGrabBag {
         }
 
         internal static void Load() {
+            Everest.Events.Level.OnLoadLevel += Level_OnLoadLevel;
+            Everest.Events.Level.OnTransitionTo += Level_OnTransitionTo;
             On.Celeste.Player.ctor += PlayerInit;
             On.Celeste.Player.Update += OnPlayerUpdate;
             On.Celeste.Player.UpdateSprite += UpdatePlayerVisuals;
         }
 
         internal static void Unload() {
+            Everest.Events.Level.OnLoadLevel -= Level_OnLoadLevel;
+            Everest.Events.Level.OnTransitionTo -= Level_OnTransitionTo;
             On.Celeste.Player.ctor -= PlayerInit;
             On.Celeste.Player.Update -= OnPlayerUpdate;
             On.Celeste.Player.UpdateSprite -= UpdatePlayerVisuals;
+        }
+
+        private static void Level_OnLoadLevel(Level level, Player.IntroTypes playerIntro, bool isFromLoader) {
+            currentGrabbed = lastGrabbed = null;
+            if (isFromLoader && (level.Session.StartedFromBeginning || level.Session.IsGoldenBerryRestart()) && level.Session.MapData.HasEntity("isaBag/zipline")) {
+                level.Session.SetFlag(NeverUsedZiplineFlag, true);
+            }
+        }
+
+        private static void Level_OnTransitionTo(Level level, LevelData next, Vector2 direction) {
+            if (lastGrabbed != null) {
+                level.Session.SetFlag(NeverUsedZiplineFlag, false);
+            }
         }
 
         private static void PlayerInit(On.Celeste.Player.orig_ctor orig, Player self, Vector2 position, PlayerSpriteMode spriteMode) {

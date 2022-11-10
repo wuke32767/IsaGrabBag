@@ -1,15 +1,17 @@
 using Microsoft.Xna.Framework;
 using Monocle;
+using MonoMod.Utils;
 using System;
 
 namespace Celeste.Mod.IsaGrabBag {
     public class GrabBagModule : EverestModule {
-        private static GrabBagMeta gbMeta;
+        public static readonly string GoldenBerryRestartField = "IsaGrabBag_GoldenBerryRestart";
 
         public GrabBagModule() {
             Instance = this;
         }
 
+        private static GrabBagMeta gbMeta;
         public static GrabBagMeta GrabBagMeta {
             get {
                 if (gbMeta == null) {
@@ -55,6 +57,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
             On.Celeste.BadelineBoost.Awake += BadelineBoostAwake;
             On.Celeste.ChangeRespawnTrigger.OnEnter += OnChangeRespawn;
+            On.Celeste.Session.Restart += Session_Restart;
         }
 
         public override void Unload() {
@@ -71,6 +74,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
             On.Celeste.BadelineBoost.Awake -= BadelineBoostAwake;
             On.Celeste.ChangeRespawnTrigger.OnEnter -= OnChangeRespawn;
+            On.Celeste.Session.Restart -= Session_Restart;
         }
 
         private void BadelineBoostAwake(On.Celeste.BadelineBoost.orig_Awake orig, BadelineBoost self, Scene scene) {
@@ -84,6 +88,15 @@ namespace Celeste.Mod.IsaGrabBag {
             orig(self, player);
 
             ForceVariants.SaveToSession();
+        }
+
+        private Session Session_Restart(On.Celeste.Session.orig_Restart orig, Session self, string intoLevel) {
+            Session restartSession = orig(self, intoLevel);
+            if (Engine.Scene is LevelExit exit && DynamicData.For(exit).Get<LevelExit.Mode>("mode") == LevelExit.Mode.GoldenBerryRestart) {
+                DynamicData.For(restartSession).Set(GoldenBerryRestartField, true);
+            }
+                
+            return restartSession;
         }
 
         public override void LoadContent(bool firstLoad) {
