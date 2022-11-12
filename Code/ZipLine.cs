@@ -9,7 +9,7 @@ using System.Collections.Generic;
 namespace Celeste.Mod.IsaGrabBag {
     [CustomEntity("isaBag/zipline")]
     public class ZipLine : Entity {
-        public static readonly string NeverUsedZiplineFlag = "IsaGrabBag_NeverUsedZipline";
+        public const string NeverUsedZiplineFlag = "IsaGrabBag_NeverUsedZipline";
 
         private const float ZIP_SPEED = 120f;
         private const float ZIP_ACCEL = 190f;

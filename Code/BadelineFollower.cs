@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace Celeste.Mod.IsaGrabBag {
     public class BadelineFollower : Entity {
-        public const string SESSION_FLAG = "has_badeline_follower";
+        public const string IsaGrabBag_HasBadelineFollower = "has_badeline_follower";
 
         private static BadelineBoost booster;
         private static bool firstBoost = false;
@@ -18,7 +18,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
         public BadelineFollower(Level level, BadelineDummy _dummy, Vector2 position)
             : base(position) {
-            level.Session.SetFlag(SESSION_FLAG, true);
+            level.Session.SetFlag(IsaGrabBag_HasBadelineFollower, true);
 
             level.Add(dummy = _dummy);
             dummy.Add(follower = new Follower());
@@ -41,8 +41,9 @@ namespace Celeste.Mod.IsaGrabBag {
 
         [Command("spawn_follower", "spawn badeline follower")]
         public static void CmdSpawnBadeline() {
-            Level level = Engine.Scene as Level;
-            SpawnBadelineFriendo(level);
+            if (Engine.Scene is Level level) {
+                SpawnBadelineFriendo(level);
+            }            
         }
 
         public static void Search() {
@@ -60,7 +61,7 @@ namespace Celeste.Mod.IsaGrabBag {
                 return;
             }
 
-            _level.Session.SetFlag(SESSION_FLAG, true);
+            _level.Session.SetFlag(IsaGrabBag_HasBadelineFollower, true);
 
             if (player == null) {
                 return;
@@ -76,7 +77,7 @@ namespace Celeste.Mod.IsaGrabBag {
                 return false;
             }
 
-            if (!lvl.Session.GetFlag(SESSION_FLAG)) {
+            if (!lvl.Session.GetFlag(IsaGrabBag_HasBadelineFollower)) {
                 return false;
             }
 
@@ -109,7 +110,7 @@ namespace Celeste.Mod.IsaGrabBag {
                     booster.Collidable = false;
                     booster.Visible = true;
 
-                    if (lvl.Session.GetFlag(SESSION_FLAG)) {
+                    if (lvl.Session.GetFlag(IsaGrabBag_HasBadelineFollower)) {
                         booster.Get<PlayerCollider>().OnCollide = NewBoostMechanic;
                         booster.Visible = false;
 
@@ -159,6 +160,36 @@ namespace Celeste.Mod.IsaGrabBag {
             lvl.Add(dummy);
             obj.Leader.GainFollower(follower);
             dummy.Position = obj.Position - new Vector2(obj.Facing == Facings.Left ? -5 : 5, 16);
+        }
+
+        internal static void Load() {
+            Everest.Events.Level.OnLoadEntity += Level_OnLoadEntity;
+            On.Celeste.BadelineBoost.Awake += BadelineBoostAwake;
+        }
+
+        internal static void Unload() {
+            Everest.Events.Level.OnLoadEntity -= Level_OnLoadEntity;
+            On.Celeste.BadelineBoost.Awake -= BadelineBoostAwake;
+        }
+
+        private static bool Level_OnLoadEntity(Level level, LevelData levelData, Vector2 offset, EntityData entityData) {
+            switch (entityData.Name) {
+                case "isaBag/baddyFollow":
+                    if (!level.Session.GetFlag(IsaGrabBag_HasBadelineFollower)) {
+                        SpawnBadelineFriendo(level);
+                    }
+
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static void BadelineBoostAwake(On.Celeste.BadelineBoost.orig_Awake orig, BadelineBoost self, Scene scene) {
+            orig(self, scene);
+            if ((scene as Level).Session.GetFlag(IsaGrabBag_HasBadelineFollower)) {
+                self.Visible = false;
+            }
         }
 
         private static IEnumerator Skip() {

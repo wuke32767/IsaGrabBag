@@ -5,7 +5,7 @@ using System;
 
 namespace Celeste.Mod.IsaGrabBag {
     public class GrabBagModule : EverestModule {
-        public static readonly string GoldenBerryRestartField = "IsaGrabBag_GoldenBerryRestart";
+        public const string GoldenBerryRestartField = "IsaGrabBag_GoldenBerryRestart";
 
         public GrabBagModule() {
             Instance = this;
@@ -44,6 +44,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
         public override void Load() {
             ArrowBubble.Load();
+            BadelineFollower.Load();
             DreamSpinnerRenderer.Load();
             ForceVariants.Load();
             RewindCrystal.Load();
@@ -52,42 +53,30 @@ namespace Celeste.Mod.IsaGrabBag {
             Everest.Events.Level.OnTransitionTo += Level_OnTransitionTo;
             Everest.Events.Level.OnEnter += Level_OnEnter;
             Everest.Events.Level.OnExit += Level_OnExit;
-            Everest.Events.Level.OnLoadEntity += Level_OnLoadEntity;
             Everest.Events.Player.OnSpawn += Player_OnSpawn;
 
-            On.Celeste.BadelineBoost.Awake += BadelineBoostAwake;
-            On.Celeste.ChangeRespawnTrigger.OnEnter += OnChangeRespawn;
             On.Celeste.Session.Restart += Session_Restart;
         }
 
         public override void Unload() {
             ArrowBubble.Unload();
+            BadelineFollower.Unload();
             DreamSpinnerRenderer.Unload();
             ForceVariants.Unload();
             RewindCrystal.Unload();
             ZipLine.Unload();
 
+            Everest.Events.Level.OnTransitionTo -= Level_OnTransitionTo;
             Everest.Events.Level.OnEnter -= Level_OnEnter;
             Everest.Events.Level.OnExit -= Level_OnExit;
-            Everest.Events.Level.OnLoadEntity -= Level_OnLoadEntity;
             Everest.Events.Player.OnSpawn -= Player_OnSpawn;
 
-            On.Celeste.BadelineBoost.Awake -= BadelineBoostAwake;
-            On.Celeste.ChangeRespawnTrigger.OnEnter -= OnChangeRespawn;
             On.Celeste.Session.Restart -= Session_Restart;
         }
 
-        private void BadelineBoostAwake(On.Celeste.BadelineBoost.orig_Awake orig, BadelineBoost self, Scene scene) {
-            orig(self, scene);
-            if ((scene as Level).Session.GetFlag(BadelineFollower.SESSION_FLAG)) {
-                self.Visible = false;
-            }
-        }
-
-        private void OnChangeRespawn(On.Celeste.ChangeRespawnTrigger.orig_OnEnter orig, ChangeRespawnTrigger self, Player player) {
-            orig(self, player);
-
-            ForceVariants.SaveToSession();
+        public override void LoadContent(bool firstLoad) {
+            RewindCrystal.LoadGraphics();
+            sprites = new SpriteBank(GFX.Game, "Graphics/IsaGrabBag.xml");
         }
 
         private Session Session_Restart(On.Celeste.Session.orig_Restart orig, Session self, string intoLevel) {
@@ -97,12 +86,6 @@ namespace Celeste.Mod.IsaGrabBag {
             }
                 
             return restartSession;
-        }
-
-        public override void LoadContent(bool firstLoad) {
-            RewindCrystal.LoadGraphics();
-            sprites = new SpriteBank(GFX.Game, "Graphics/IsaGrabBag.xml");
-
         }
 
         private void Player_OnSpawn(Player obj) {
@@ -116,7 +99,7 @@ namespace Celeste.Mod.IsaGrabBag {
                 obj.Add(new VariantEnforcer());
             }
 
-            if (lvl.Session.GetFlag(BadelineFollower.SESSION_FLAG)) {
+            if (lvl.Session.GetFlag(BadelineFollower.IsaGrabBag_HasBadelineFollower)) {
                 foreach (BadelineBoost boost in lvl.Entities.FindAll<BadelineBoost>()) {
                     boost.Visible = false;
                     boost.Collidable = false;
@@ -133,7 +116,7 @@ namespace Celeste.Mod.IsaGrabBag {
                 }
             }
 
-            if (lvl.Session.GetFlag(BadelineFollower.SESSION_FLAG)) {
+            if (lvl.Session.GetFlag(BadelineFollower.IsaGrabBag_HasBadelineFollower)) {
                 BadelineFollower.instance.dummy.Visible = true;
             }
 
@@ -187,7 +170,7 @@ namespace Celeste.Mod.IsaGrabBag {
                 gbMeta = GrabBagMeta.Default(level.Session.Area);
             }
 
-            if (level.Session.GetFlag(BadelineFollower.SESSION_FLAG)) {
+            if (level.Session.GetFlag(BadelineFollower.IsaGrabBag_HasBadelineFollower)) {
                 if (BadelineFollower.instance == null) {
                     BadelineFollower follower = new(level, playerInstance.Position);
                     level.Add(follower);
@@ -198,23 +181,10 @@ namespace Celeste.Mod.IsaGrabBag {
 
                 BadelineFollower.Search();
 
-                if (level.Session.GetFlag(BadelineFollower.SESSION_FLAG)) {
+                if (level.Session.GetFlag(BadelineFollower.IsaGrabBag_HasBadelineFollower)) {
                     BadelineFollower.instance.dummy.Visible = true;
                 }
             }
-        }
-
-        private bool Level_OnLoadEntity(Level level, LevelData levelData, Vector2 offset, EntityData entityData) {
-            switch (entityData.Name) {
-                case "isaBag/baddyFollow":
-                    if (!level.Session.GetFlag(BadelineFollower.SESSION_FLAG)) {
-                        BadelineFollower.SpawnBadelineFriendo(level);
-                    }
-
-                    return true;
-            }
-
-            return false;
         }
     }
 }

@@ -20,6 +20,7 @@ namespace Celeste.Mod.IsaGrabBag {
         ThreeSixtyDashing = 9,
         DashAssist = 10
     }
+
     public enum VariantState {
         Enabled,
         Disabled,
@@ -52,35 +53,6 @@ namespace Celeste.Mod.IsaGrabBag {
 
         private static bool[] Variants_Default { get; set; } = new bool[] { false, false, false, false, false, false, false, false, false, false, false };
         private static bool?[] Variants { get; set; } = new bool?[] { null, null, null, null, null, null, null, null, null, null, null };
-
-        public static void Load() {
-            On.Celeste.Level.AssistMode += Level_AssistMode;
-            On.Celeste.Level.VariantMode += Level_VariantMode;
-
-            Delegate optionChanged = new Action<Action<TextMenu.Option<bool>>, TextMenu.Option<bool>>(OnChange);
-            disableHook = new Hook(
-                typeof(TextMenu.Option<bool>).GetMethod("LeftPressed", BindingFlags.Instance | BindingFlags.Public),
-                optionChanged);
-
-            enableHook = new Hook(
-                typeof(TextMenu.Option<bool>).GetMethod("RightPressed", BindingFlags.Instance | BindingFlags.Public),
-                optionChanged);
-
-            aPressHook = new Hook(
-                typeof(TextMenu.Option<bool>).GetMethod("ConfirmPressed", BindingFlags.Instance | BindingFlags.Public),
-                optionChanged);
-        }
-
-        public static void Unload() {
-            On.Celeste.Level.AssistMode -= Level_AssistMode;
-            On.Celeste.Level.VariantMode -= Level_VariantMode;
-            On.Celeste.TextMenu.Close -= TextMenu_Close;
-
-            enableHook?.Dispose();
-            disableHook?.Dispose();
-            aPressHook?.Dispose();
-            enableHook = disableHook = aPressHook = null;
-        }
 
         public static bool? GetVariantModdedValue(Variant variant) {
             return Variants[(int)variant];
@@ -166,6 +138,42 @@ namespace Celeste.Mod.IsaGrabBag {
             };
         }
 
+        internal static void Load() {
+            On.Celeste.ChangeRespawnTrigger.OnEnter += OnChangeRespawn;
+            On.Celeste.Level.AssistMode += Level_AssistMode;
+            On.Celeste.Level.VariantMode += Level_VariantMode;
+
+            Delegate optionChanged = new Action<Action<TextMenu.Option<bool>>, TextMenu.Option<bool>>(OnChange);
+            disableHook = new Hook(
+                typeof(TextMenu.Option<bool>).GetMethod("LeftPressed", BindingFlags.Instance | BindingFlags.Public),
+                optionChanged);
+
+            enableHook = new Hook(
+                typeof(TextMenu.Option<bool>).GetMethod("RightPressed", BindingFlags.Instance | BindingFlags.Public),
+                optionChanged);
+
+            aPressHook = new Hook(
+                typeof(TextMenu.Option<bool>).GetMethod("ConfirmPressed", BindingFlags.Instance | BindingFlags.Public),
+                optionChanged);
+        }
+
+        internal static void Unload() {
+            On.Celeste.ChangeRespawnTrigger.OnEnter -= OnChangeRespawn;
+            On.Celeste.Level.AssistMode -= Level_AssistMode;
+            On.Celeste.Level.VariantMode -= Level_VariantMode;
+            On.Celeste.TextMenu.Close -= TextMenu_Close;
+
+            enableHook?.Dispose();
+            disableHook?.Dispose();
+            aPressHook?.Dispose();
+            enableHook = disableHook = aPressHook = null;
+        }
+
+        private static void OnChangeRespawn(On.Celeste.ChangeRespawnTrigger.orig_OnEnter orig, ChangeRespawnTrigger self, Player player) {
+            orig(self, player);
+            SaveToSession();
+        }
+
         private static void OnChange(Action<TextMenu.Option<bool>> orig, TextMenu.Option<bool> self) {
             orig(self);
 
@@ -179,14 +187,12 @@ namespace Celeste.Mod.IsaGrabBag {
 
         private static void Level_VariantMode(On.Celeste.Level.orig_VariantMode orig, Level self, int returnIndex, bool minimal) {
             orig(self, returnIndex, minimal);
-
             List<Entity> list = self.Entities.ToAdd;
             OnVariantMenu(list[list.Count - 1] as TextMenu, false);
 
         }
         private static void Level_AssistMode(On.Celeste.Level.orig_AssistMode orig, Level self, int returnIndex, bool minimal) {
             orig(self, returnIndex, minimal);
-
             List<Entity> list = self.Entities.ToAdd;
             OnVariantMenu(list[list.Count - 1] as TextMenu, true);
         }
@@ -305,11 +311,10 @@ namespace Celeste.Mod.IsaGrabBag {
 
         public override void OnEnter(Player player) {
             base.OnEnter(player);
-
             previous = ForceVariants.GetVariantStatus(variant);
             ForceVariants.SetVariant(variant, enable);
-
         }
+
         public override void OnLeave(Player player) {
             base.OnLeave(player);
 
