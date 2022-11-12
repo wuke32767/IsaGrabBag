@@ -88,15 +88,15 @@ namespace Celeste.Mod.IsaGrabBag {
             return restartSession;
         }
 
-        private void Player_OnSpawn(Player obj) {
-            Level lvl = obj.SceneAs<Level>();
+        private void Player_OnSpawn(Player player) {
+            Level lvl = player.SceneAs<Level>();
 
-            playerInstance = obj;
+            playerInstance = player;
 
             ForceVariants.GetFromSession();
 
-            if (obj.Get<VariantEnforcer>() == null) {
-                obj.Add(new VariantEnforcer());
+            if (player.Get<WaterBoostHandler>() == null) {
+                player.Add(new WaterBoostHandler());
             }
 
             if (lvl.Session.GetFlag(BadelineFollower.IsaGrabBag_HasBadelineFollower)) {
@@ -107,11 +107,11 @@ namespace Celeste.Mod.IsaGrabBag {
 
                 if (lvl.Entities.FindFirst<BadelineFollower>() == null) {
                     if (BadelineFollower.instance == null) {
-                        BadelineFollower follower = new(lvl, obj.Position + new Vector2((int)playerInstance.Facing * -12, -20));
+                        BadelineFollower follower = new(lvl, player.Position + new Vector2((int)playerInstance.Facing * -12, -20));
                         lvl.Add(follower);
-                        obj.Leader.GainFollower(follower.follower);
+                        player.Leader.GainFollower(follower.follower);
                     } else {
-                        BadelineFollower.instance.Readd(lvl, obj);
+                        BadelineFollower.instance.Readd(lvl, player);
                     }
                 }
             }

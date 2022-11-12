@@ -326,40 +326,4 @@ namespace Celeste.Mod.IsaGrabBag {
             }
         }
     }
-
-    public class VariantEnforcer : Component {
-        private Player player;
-
-        public VariantEnforcer()
-            : base(active: true, visible: false) {
-        }
-
-        public override void Update() {
-            player = Entity as Player;
-            if (player == null) {
-                return;
-            }
-
-            //ForceVariants.ReinforceSession();
-            //ForceVariantTrigger.Reinforce();
-            if (GrabBagModule.GrabBagMeta.WaterBoost) {
-                WaterBoost();
-            }
-        }
-
-        private void WaterBoost() {
-            if (!player.Collidable) {
-                return;
-            }
-
-            Vector2 posOffset = player.Position + (player.Speed * Engine.DeltaTime * 2);
-            bool isInWater = player.CollideCheck<Water>(posOffset) || player.CollideCheck<Water>(posOffset + (Vector2.UnitY * -8f));
-            if (!isInWater && player.StateMachine.State == Player.StSwim && (player.Speed.Y < 0 || Input.MoveY.Value == -1 || Input.Jump.Check)) {
-                player.Speed.Y = (Input.MoveY.Value == -1 || Input.Jump.Check) ? -110 : 0;
-                if (player.Speed.Y < -1) {
-                    player.Speed.X *= 1.1f;
-                }
-            }
-        }
-    }
 }
