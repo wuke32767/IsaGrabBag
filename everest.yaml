@@ -4,3 +4,6 @@
   Dependencies:
     - Name: Everest
       Version: 1.2593.0
+  OptionalDependencies:
+    - Name: BingoUI
+      Version: 1.2.6

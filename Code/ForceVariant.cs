@@ -1,4 +1,5 @@
-﻿using Celeste.Mod.Entities;
+﻿using Celeste.Mod.BingoUI;
+using Celeste.Mod.Entities;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.RuntimeDetour;
@@ -197,6 +198,9 @@ namespace Celeste.Mod.IsaGrabBag {
             OnVariantMenu(list[list.Count - 1] as TextMenu, true);
         }
 
+        private static bool bingoUIMenuModifiedUnsafe => BingoModule.mySettings.Enabled && BingoModule.mySettings.HideVariantsExceptGrabless;
+        private static bool bingoUIMenuModified => GrabBagModule.BingoUIInstalled && bingoUIMenuModifiedUnsafe;
+
         private static void OnVariantMenu(TextMenu menu, bool assist) {
             variantMenu = menu;
             IsaSession session = GrabBagModule.Session;
@@ -211,7 +215,7 @@ namespace Celeste.Mod.IsaGrabBag {
                     continue;
                 }
 
-                Variant v = menuLayout[index++];
+                Variant v = (!assist && bingoUIMenuModified) ? Variant.NoGrabbing : menuLayout[index++];
                 itemList.Add(item, (int)v);
             }
         }
