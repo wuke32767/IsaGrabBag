@@ -1,6 +1,11 @@
-﻿using Celeste.Mod.Entities;
+﻿using Celeste.Mod.BingoUI;
+using Celeste.Mod.Entities;
 using Microsoft.Xna.Framework;
 using Monocle;
+using MonoMod.RuntimeDetour;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace Celeste.Mod.IsaGrabBag {
     public enum Variant {
@@ -29,7 +34,36 @@ namespace Celeste.Mod.IsaGrabBag {
     }
 
     public static class ForceVariants {
+        private static readonly List<Variant> menuLayout = new(){
+            Variant.MirrorMode,
+            Variant.ThreeSixtyDashing,
+            Variant.InvisibleMotion,
+            Variant.NoGrabbing,
+            Variant.LowFriction,
+            Variant.SuperDashing,
+            Variant.Hiccups,
+            Variant.PlayAsBadeline,
+            Variant.InfiniteStamina,
+            Variant.DashAssist,
+            Variant.Invincible,
+        };
+
+        private static Dictionary<TextMenu.Item, int> itemList = new();
+        private static Hook enableHook, disableHook, aPressHook;
+        private static TextMenu variantMenu;
+
+        private static bool[] Variants_Default { get; set; } = new bool[] { false, false, false, false, false, false, false, false, false, false, false };
         private static bool?[] Variants { get; set; } = new bool?[] { null, null, null, null, null, null, null, null, null, null, null };
+
+        public static bool? GetVariantModdedValue(Variant variant) {
+            return Variants[(int)variant];
+        }
+
+        public static void GetDefaults() {
+            for (int i = 0; i < Variants_Default.Length; i++) {
+                Variants_Default[i] = GetVariantStatus((Variant)i);
+            }
+        }
 
         public static void SaveToSession() {
             IsaSession session = GrabBagModule.Session;
@@ -62,7 +96,7 @@ namespace Celeste.Mod.IsaGrabBag {
         }
 
         public static void ResetSession() {
-            for (int i = 0; i < Variants.Length; i++) {
+            for (int i = 0; i < Variants_Default.Length; i++) {
                 SetVariant(i, VariantState.SetToDefault);
             }
         }
@@ -74,7 +108,7 @@ namespace Celeste.Mod.IsaGrabBag {
         public static void SetVariant(Variant variant, VariantState state) {
             if (state == VariantState.SetToDefault) {
                 Variants[(int)variant] = null;
-                SetVariantInGame(variant, GetVariantStatus(variant));
+                SetVariantInGame(variant, Variants_Default[(int)variant]);
                 return;
             }
 
@@ -107,15 +141,92 @@ namespace Celeste.Mod.IsaGrabBag {
 
         internal static void Load() {
             On.Celeste.ChangeRespawnTrigger.OnEnter += OnChangeRespawn;
+            On.Celeste.Level.AssistMode += Level_AssistMode;
+            On.Celeste.Level.VariantMode += Level_VariantMode;
+
+            Delegate optionChanged = new Action<Action<TextMenu.Option<bool>>, TextMenu.Option<bool>>(OnChange);
+            disableHook = new Hook(
+                typeof(TextMenu.Option<bool>).GetMethod("LeftPressed", BindingFlags.Instance | BindingFlags.Public),
+                optionChanged);
+
+            enableHook = new Hook(
+                typeof(TextMenu.Option<bool>).GetMethod("RightPressed", BindingFlags.Instance | BindingFlags.Public),
+                optionChanged);
+
+            aPressHook = new Hook(
+                typeof(TextMenu.Option<bool>).GetMethod("ConfirmPressed", BindingFlags.Instance | BindingFlags.Public),
+                optionChanged);
         }
 
         internal static void Unload() {
             On.Celeste.ChangeRespawnTrigger.OnEnter -= OnChangeRespawn;
+            On.Celeste.Level.AssistMode -= Level_AssistMode;
+            On.Celeste.Level.VariantMode -= Level_VariantMode;
+            On.Celeste.TextMenu.Close -= TextMenu_Close;
+
+            enableHook?.Dispose();
+            disableHook?.Dispose();
+            aPressHook?.Dispose();
+            enableHook = disableHook = aPressHook = null;
         }
 
         private static void OnChangeRespawn(On.Celeste.ChangeRespawnTrigger.orig_OnEnter orig, ChangeRespawnTrigger self, Player player) {
             orig(self, player);
             SaveToSession();
+        }
+
+        private static void OnChange(Action<TextMenu.Option<bool>> orig, TextMenu.Option<bool> self) {
+            orig(self);
+
+            if (itemList.ContainsKey(self)) {
+                bool value = self.Index >= 1;
+                int index = itemList[self];
+                Variants_Default[index] = value;
+
+            }
+        }
+
+        private static void Level_VariantMode(On.Celeste.Level.orig_VariantMode orig, Level self, int returnIndex, bool minimal) {
+            orig(self, returnIndex, minimal);
+            List<Entity> list = self.Entities.ToAdd;
+            OnVariantMenu(list[list.Count - 1] as TextMenu, false);
+
+        }
+        private static void Level_AssistMode(On.Celeste.Level.orig_AssistMode orig, Level self, int returnIndex, bool minimal) {
+            orig(self, returnIndex, minimal);
+            List<Entity> list = self.Entities.ToAdd;
+            OnVariantMenu(list[list.Count - 1] as TextMenu, true);
+        }
+
+        private static bool bingoUIMenuModifiedUnsafe => BingoModule.mySettings.Enabled && BingoModule.mySettings.HideVariantsExceptGrabless;
+        private static bool bingoUIMenuModified => GrabBagModule.BingoUIInstalled && bingoUIMenuModifiedUnsafe;
+
+        private static void OnVariantMenu(TextMenu menu, bool assist) {
+            variantMenu = menu;
+            IsaSession session = GrabBagModule.Session;
+            itemList = new Dictionary<TextMenu.Item, int>();
+
+            On.Celeste.TextMenu.Close += TextMenu_Close;
+
+            int index = assist ? 8 : 0;
+            for (int i = 0; i < menu.Items.Count; ++i) {
+                TextMenu.Item item = menu.Items[i];
+                if (item is not TextMenu.OnOff) {
+                    continue;
+                }
+
+                Variant v = (!assist && bingoUIMenuModified) ? Variant.NoGrabbing : menuLayout[index++];
+                itemList.Add(item, (int)v);
+            }
+        }
+
+        private static void TextMenu_Close(On.Celeste.TextMenu.orig_Close orig, TextMenu self) {
+            orig(self);
+            if (variantMenu != self) {
+                return;
+            }
+
+            On.Celeste.TextMenu.Close -= TextMenu_Close;
         }
 
         private static void SetVariantInGame(Variant variant, bool value) {
