@@ -213,10 +213,6 @@ namespace Celeste.Mod.IsaGrabBag {
 
                 Variant v = menuLayout[index++];
                 itemList.Add(item, (int)v);
-
-                if (Variants[(int)v] != null) {
-                    item.Disabled = true;
-                }
             }
         }
 
