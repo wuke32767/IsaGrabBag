@@ -158,7 +158,9 @@ namespace Celeste.Mod.IsaGrabBag {
                 GrabBagMeta.WaterBoost = true;
             }
 
+            ForceVariants.GetDefaults();
             ForceVariants.ReinforceSession();
+
         }
 
         private void Level_OnTransitionTo(Level level, LevelData next, Vector2 direction) {
