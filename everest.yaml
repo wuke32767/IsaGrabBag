@@ -3,7 +3,7 @@
   DLL: Code/bin/IsaMods.dll
   Dependencies:
     - Name: Everest
-      Version: 1.3650.0
+      Version: 1.3847.0
   OptionalDependencies:
     - Name: BingoUI
       Version: 1.2.6

@@ -121,7 +121,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
         private static void Level_OnLoadLevel(Level level, Player.IntroTypes playerIntro, bool isFromLoader) {
             currentGrabbed = lastGrabbed = null;
-            if (isFromLoader && (level.Session.StartedFromBeginning || level.Session.IsGoldenBerryRestart()) && level.Session.MapData.HasEntity("isaBag/zipline")) {
+            if (isFromLoader && (level.Session.StartedFromBeginning || level.Session.RestartedFromGolden) && level.Session.MapData.HasEntity("isaBag/zipline")) {
                 level.Session.SetFlag(NeverUsedZiplineFlag, true);
             }
         }

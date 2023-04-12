@@ -1,12 +1,9 @@
 using Microsoft.Xna.Framework;
 using Monocle;
-using MonoMod.Utils;
 using System;
 
 namespace Celeste.Mod.IsaGrabBag {
     public class GrabBagModule : EverestModule {
-        public const string GoldenBerryRestartField = "IsaGrabBag_GoldenBerryRestart";
-
         public GrabBagModule() {
             Instance = this;
         }
@@ -57,8 +54,6 @@ namespace Celeste.Mod.IsaGrabBag {
             Everest.Events.Level.OnExit += Level_OnExit;
             Everest.Events.Player.OnSpawn += Player_OnSpawn;
 
-            On.Celeste.Session.Restart += Session_Restart;
-
             BingoUIInstalled = Everest.Loader.TryGetDependency(new() {Name = "BingoUI", Version = new(1, 2, 6)}, out _);
         }
 
@@ -74,22 +69,11 @@ namespace Celeste.Mod.IsaGrabBag {
             Everest.Events.Level.OnEnter -= Level_OnEnter;
             Everest.Events.Level.OnExit -= Level_OnExit;
             Everest.Events.Player.OnSpawn -= Player_OnSpawn;
-
-            On.Celeste.Session.Restart -= Session_Restart;
         }
 
         public override void LoadContent(bool firstLoad) {
             RewindCrystal.LoadGraphics();
             sprites = new SpriteBank(GFX.Game, "Graphics/IsaGrabBag.xml");
-        }
-
-        private Session Session_Restart(On.Celeste.Session.orig_Restart orig, Session self, string intoLevel) {
-            Session restartSession = orig(self, intoLevel);
-            if (Engine.Scene is LevelExit exit && DynamicData.For(exit).Get<LevelExit.Mode>("mode") == LevelExit.Mode.GoldenBerryRestart) {
-                DynamicData.For(restartSession).Set(GoldenBerryRestartField, true);
-            }
-                
-            return restartSession;
         }
 
         private void Player_OnSpawn(Player player) {
