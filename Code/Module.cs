@@ -50,8 +50,8 @@ namespace Celeste.Mod.IsaGrabBag {
             ZipLine.Load();
 
             Everest.Events.Level.OnTransitionTo += Level_OnTransitionTo;
-            Everest.Events.Level.OnEnter += Level_OnEnter;
             Everest.Events.Level.OnExit += Level_OnExit;
+            Everest.Events.LevelLoader.OnLoadingThread += LevelLoader_OnLoadingThread;
             Everest.Events.Player.OnSpawn += Player_OnSpawn;
 
             BingoUIInstalled = Everest.Loader.TryGetDependency(new() {Name = "BingoUI", Version = new(1, 2, 6)}, out _);
@@ -66,8 +66,8 @@ namespace Celeste.Mod.IsaGrabBag {
             ZipLine.Unload();
 
             Everest.Events.Level.OnTransitionTo -= Level_OnTransitionTo;
-            Everest.Events.Level.OnEnter -= Level_OnEnter;
             Everest.Events.Level.OnExit -= Level_OnExit;
+            Everest.Events.LevelLoader.OnLoadingThread -= LevelLoader_OnLoadingThread;
             Everest.Events.Player.OnSpawn -= Player_OnSpawn;
         }
 
@@ -123,11 +123,12 @@ namespace Celeste.Mod.IsaGrabBag {
             BadelineFollower.instance = null;
         }
 
-        private void Level_OnEnter(Session session, bool fromSaveData) {
+        private void LevelLoader_OnLoadingThread(Level level) {
+            Session session = level.Session;
+
             try {
                 gbMeta = null;
 
-                //string s = session.Area.GetSID();
                 if (session != null && session.Area != null && session.Area.SID != null) {
 
                     ModAsset get = Everest.Content.Get(session.Area.SID);
