@@ -50,6 +50,7 @@ namespace Celeste.Mod.IsaGrabBag {
             ZipLine.Load();
 
             Everest.Events.Level.OnTransitionTo += Level_OnTransitionTo;
+            Everest.Events.Level.OnEnter += Level_OnEnter;
             Everest.Events.Level.OnExit += Level_OnExit;
             Everest.Events.LevelLoader.OnLoadingThread += LevelLoader_OnLoadingThread;
             Everest.Events.Player.OnSpawn += Player_OnSpawn;
@@ -66,6 +67,7 @@ namespace Celeste.Mod.IsaGrabBag {
             ZipLine.Unload();
 
             Everest.Events.Level.OnTransitionTo -= Level_OnTransitionTo;
+            Everest.Events.Level.OnEnter -= Level_OnEnter;
             Everest.Events.Level.OnExit -= Level_OnExit;
             Everest.Events.LevelLoader.OnLoadingThread -= LevelLoader_OnLoadingThread;
             Everest.Events.Player.OnSpawn -= Player_OnSpawn;
@@ -129,6 +131,7 @@ namespace Celeste.Mod.IsaGrabBag {
             try {
                 gbMeta = null;
 
+                //string s = session.Area.GetSID();
                 if (session != null && session.Area != null && session.Area.SID != null) {
 
                     ModAsset get = Everest.Content.Get(session.Area.SID);
@@ -146,10 +149,11 @@ namespace Celeste.Mod.IsaGrabBag {
             if (session.Area.LevelSet.StartsWith("SpringCollab2020")) {
                 GrabBagMeta.WaterBoost = true;
             }
+        }
 
+        private void Level_OnEnter(Session session, bool fromSaveData) {
             ForceVariants.GetDefaults();
             ForceVariants.ReinforceSession();
-
         }
 
         private void Level_OnTransitionTo(Level level, LevelData next, Vector2 direction) {
