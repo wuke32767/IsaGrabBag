@@ -104,7 +104,7 @@ namespace Celeste.Mod.IsaGrabBag {
                                 break;
                             }
 
-                            tiles.Tiles[x, y] = tileset.get_Item((int)(u * width), (int)(v * height));
+                            tiles.Tiles[x, y] = tileset[(int)(u * width), (int)(v * height)];
                         }
                     }
                 }
