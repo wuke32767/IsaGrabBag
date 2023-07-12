@@ -41,8 +41,8 @@ namespace Celeste.Mod.IsaGrabBag {
         public static Player playerInstance { get; private set; }
 
         public static SpriteBank sprites { get; private set; }
-        
-        public static bool BingoUIInstalled { get; private set; }
+
+        public static DynamicData BingoUIModuleSettings;
 
         public override void Load() {
             ArrowBubble.Load();
@@ -59,7 +59,8 @@ namespace Celeste.Mod.IsaGrabBag {
 
             On.Celeste.Session.Restart += Session_Restart;
 
-            BingoUIInstalled = Everest.Loader.TryGetDependency(new() {Name = "BingoUI", Version = new(1, 2, 6)}, out _);
+            if (Everest.Loader.TryGetDependency(new() { Name = "BingoUI", Version = new(1, 2, 6) }, out var BingoUIModule))
+                BingoUIModuleSettings = DynamicData.For(BingoUIModule._Settings);
         }
 
         public override void Unload() {

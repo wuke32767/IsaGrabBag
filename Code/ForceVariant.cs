@@ -197,10 +197,7 @@ namespace Celeste.Mod.IsaGrabBag {
             List<Entity> list = self.Entities.ToAdd;
             OnVariantMenu(list[list.Count - 1] as TextMenu, true);
         }
-
-        private static bool bingoUIMenuModifiedUnsafe => BingoModule.mySettings.Enabled && BingoModule.mySettings.HideVariantsExceptGrabless;
-        private static bool bingoUIMenuModified => GrabBagModule.BingoUIInstalled && bingoUIMenuModifiedUnsafe;
-
+        private static bool bingoUIMenuModified => (GrabBagModule.BingoUIModuleSettings?.Get<bool>("Enabled") ?? false) && GrabBagModule.BingoUIModuleSettings.Get<bool>("HideVariantsExceptGrabless");
         private static void OnVariantMenu(TextMenu menu, bool assist) {
             variantMenu = menu;
             IsaSession session = GrabBagModule.Session;
