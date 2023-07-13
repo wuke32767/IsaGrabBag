@@ -44,10 +44,6 @@
         </When>
     </Choose>
 
-    <ItemGroup>
-        <Reference Include="..\lib-stripped\BingoUI.dll" />
-    </ItemGroup>
-
     <Target Name="CopyFiles" AfterTargets="Build">
         <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="bin" />
         <Copy SourceFiles="$(OutputPath)\$(AssemblyName).pdb" DestinationFolder="bin" />

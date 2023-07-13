@@ -1,5 +1,4 @@
-﻿using Celeste.Mod.BingoUI;
-using Celeste.Mod.Entities;
+﻿using Celeste.Mod.Entities;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.RuntimeDetour;
