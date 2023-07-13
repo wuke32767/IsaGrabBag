@@ -39,7 +39,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
         public static SpriteBank sprites { get; private set; }
 
-        public static DynamicData BingoUIModuleSettings;
+        public static MonoMod.Utils.DynamicData BingoUIModuleSettings;
 
         public override void Load() {
             ArrowBubble.Load();
@@ -56,7 +56,7 @@ namespace Celeste.Mod.IsaGrabBag {
             Everest.Events.Player.OnSpawn += Player_OnSpawn;
 
             if (Everest.Loader.TryGetDependency(new() { Name = "BingoUI", Version = new(1, 2, 6) }, out var BingoUIModule))
-                BingoUIModuleSettings = DynamicData.For(BingoUIModule._Settings);
+                BingoUIModuleSettings = MonoMod.Utils.DynamicData.For(BingoUIModule._Settings);
         }
 
         public override void Unload() {
