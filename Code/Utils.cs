@@ -1,9 +1,5 @@
-using MonoMod.Utils;
-
 namespace Celeste.Mod.IsaGrabBag {
     public static class Utils {
-        public static bool IsGoldenBerryRestart(this Session session) => DynamicData.For(session).Get<bool?>(GrabBagModule.GoldenBerryRestartField) ?? false;
-
         public static float Mod(float x, float m) {
             return ((x % m) + m) % m;
         }

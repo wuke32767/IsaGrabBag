@@ -64,7 +64,7 @@ namespace Celeste.Mod.IsaGrabBag {
             }
 
             if (grabbed) {
-                if (player.Speed.X > 20) {
+                if (Math.Abs(player.Speed.X) > 20) {
                     player.LiftSpeed = player.Speed;
                     player.LiftSpeedGraceTime = 0.2f;
                 }
@@ -121,7 +121,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
         private static void Level_OnLoadLevel(Level level, Player.IntroTypes playerIntro, bool isFromLoader) {
             currentGrabbed = lastGrabbed = null;
-            if (isFromLoader && (level.Session.StartedFromBeginning || level.Session.IsGoldenBerryRestart()) && level.Session.MapData.HasEntity("isaBag/zipline")) {
+            if (isFromLoader && (level.Session.StartedFromBeginning || level.Session.RestartedFromGolden) && level.Session.MapData.HasEntity("isaBag/zipline")) {
                 level.Session.SetFlag(NeverUsedZiplineFlag, true);
             }
         }
@@ -187,15 +187,16 @@ namespace Celeste.Mod.IsaGrabBag {
 
             currentGrabbed.speed = self.Speed.X;
 
-            if (Math.Abs(self.LiftSpeed.X) <= Math.Abs(self.Speed.X)) {
+            if (Math.Sign(self.LiftSpeed.X) * Math.Sign(self.Speed.X) == -1 || Math.Abs(self.LiftSpeed.X) <= Math.Abs(self.Speed.X)) {
                 self.LiftSpeed = self.Speed;
                 self.LiftSpeedGraceTime = 0.15f;
             }
 
-            if (Math.Sign(Input.Aim.Value.X) == -Math.Sign(self.Speed.X)) {
-                self.Speed.X = Calc.Approach(self.Speed.X, Input.Aim.Value.X * ZIP_SPEED, ZIP_TURN * Engine.DeltaTime);
-            } else if (Math.Abs(self.Speed.X) <= ZIP_SPEED || Math.Sign(Input.Aim.Value.X) != Math.Sign(self.Speed.X)) {
-                self.Speed.X = Calc.Approach(self.Speed.X, Input.Aim.Value.X * ZIP_SPEED, ZIP_ACCEL * Engine.DeltaTime);
+            int moveX = DynamicData.For(self).Get<int>("moveX");
+            if (Math.Sign(moveX) == -Math.Sign(self.Speed.X)) {
+                self.Speed.X = Calc.Approach(self.Speed.X, moveX * ZIP_SPEED, ZIP_TURN * Engine.DeltaTime);
+            } else if (Math.Abs(self.Speed.X) <= ZIP_SPEED || Math.Sign(moveX) != Math.Sign(self.Speed.X)) {
+                self.Speed.X = Calc.Approach(self.Speed.X, moveX * ZIP_SPEED, ZIP_ACCEL * Engine.DeltaTime);
             }
 
             if (!Input.GrabCheck || self.Stamina <= 0) {

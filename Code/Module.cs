@@ -1,12 +1,9 @@
 using Microsoft.Xna.Framework;
 using Monocle;
-using MonoMod.Utils;
 using System;
 
 namespace Celeste.Mod.IsaGrabBag {
     public class GrabBagModule : EverestModule {
-        public const string GoldenBerryRestartField = "IsaGrabBag_GoldenBerryRestart";
-
         public GrabBagModule() {
             Instance = this;
         }
@@ -55,9 +52,8 @@ namespace Celeste.Mod.IsaGrabBag {
             Everest.Events.Level.OnTransitionTo += Level_OnTransitionTo;
             Everest.Events.Level.OnEnter += Level_OnEnter;
             Everest.Events.Level.OnExit += Level_OnExit;
+            Everest.Events.LevelLoader.OnLoadingThread += LevelLoader_OnLoadingThread;
             Everest.Events.Player.OnSpawn += Player_OnSpawn;
-
-            On.Celeste.Session.Restart += Session_Restart;
 
             if (Everest.Loader.TryGetDependency(new() { Name = "BingoUI", Version = new(1, 2, 6) }, out var BingoUIModule))
                 BingoUIModuleSettings = DynamicData.For(BingoUIModule._Settings);
@@ -74,23 +70,13 @@ namespace Celeste.Mod.IsaGrabBag {
             Everest.Events.Level.OnTransitionTo -= Level_OnTransitionTo;
             Everest.Events.Level.OnEnter -= Level_OnEnter;
             Everest.Events.Level.OnExit -= Level_OnExit;
+            Everest.Events.LevelLoader.OnLoadingThread -= LevelLoader_OnLoadingThread;
             Everest.Events.Player.OnSpawn -= Player_OnSpawn;
-
-            On.Celeste.Session.Restart -= Session_Restart;
         }
 
         public override void LoadContent(bool firstLoad) {
             RewindCrystal.LoadGraphics();
             sprites = new SpriteBank(GFX.Game, "Graphics/IsaGrabBag.xml");
-        }
-
-        private Session Session_Restart(On.Celeste.Session.orig_Restart orig, Session self, string intoLevel) {
-            Session restartSession = orig(self, intoLevel);
-            if (Engine.Scene is LevelExit exit && DynamicData.For(exit).Get<LevelExit.Mode>("mode") == LevelExit.Mode.GoldenBerryRestart) {
-                DynamicData.For(restartSession).Set(GoldenBerryRestartField, true);
-            }
-                
-            return restartSession;
         }
 
         private void Player_OnSpawn(Player player) {
@@ -140,7 +126,9 @@ namespace Celeste.Mod.IsaGrabBag {
             BadelineFollower.instance = null;
         }
 
-        private void Level_OnEnter(Session session, bool fromSaveData) {
+        private void LevelLoader_OnLoadingThread(Level level) {
+            Session session = level.Session;
+
             try {
                 gbMeta = null;
 
@@ -162,10 +150,11 @@ namespace Celeste.Mod.IsaGrabBag {
             if (session.Area.LevelSet.StartsWith("SpringCollab2020")) {
                 GrabBagMeta.WaterBoost = true;
             }
+        }
 
+        private void Level_OnEnter(Session session, bool fromSaveData) {
             ForceVariants.GetDefaults();
             ForceVariants.ReinforceSession();
-
         }
 
         private void Level_OnTransitionTo(Level level, LevelData next, Vector2 direction) {
