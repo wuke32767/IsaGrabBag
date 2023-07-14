@@ -20,7 +20,7 @@
     </ItemDefinitionGroup>
 
     <ItemGroup>
-        <PackageReference Include="MonoMod.RuntimeDetour" Version="22.01.04.03" />
+        <PackageReference Include="MonoMod.RuntimeDetour" Version="22.07.31.01" />
     </ItemGroup>
 
     <ItemGroup>
@@ -43,10 +43,6 @@
             </ItemGroup>
         </When>
     </Choose>
-
-    <ItemGroup>
-        <Reference Include="..\lib-stripped\BingoUI.dll" />
-    </ItemGroup>
 
     <Target Name="CopyFiles" AfterTargets="Build">
         <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="bin" />
