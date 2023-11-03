@@ -33,9 +33,10 @@ namespace Celeste.Mod.IsaGrabBag {
             }
 
             DynamicData baseData = new(typeof(Booster), this);
-            sprite = baseData.Get<Sprite>("sprite");
-            Remove(sprite);
+            Remove(Get<Sprite>());
             Add(sprite = GrabBagModule.sprites.Create($"booster_{dir}"));
+            baseData.Set("sprite", sprite);
+
         }
 
         public static void Load() {
