@@ -1,15 +1,20 @@
 ﻿using Celeste.Mod.Entities;
+using Celeste.Mod.UI;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Monocle;
+using MonoMod.RuntimeDetour;
 using System;
 using System.Collections;
+using System.Reflection;
 
 namespace Celeste.Mod.IsaGrabBag {
     [CustomEntity("isaBag/rewindCrystal")]
     public class RewindCrystal : Entity {
         private const float RewindCount = 3.5f;
         private const int rewindFrames = (int)(RewindCount * 60);
+
+        private static Hook subHudRendererHook;
 
         private static readonly CharacterState[] states = new CharacterState[rewindFrames];
         private readonly bool oneUse = false;
@@ -57,7 +62,10 @@ namespace Celeste.Mod.IsaGrabBag {
             On.Celeste.Player.Update += Player_Update;
             On.Celeste.Player.Render += Player_Render;
             Everest.Events.Level.OnLoadLevel += Level_OnLoadLevel;
-            On.Celeste.Mod.UI.SubHudRenderer.Render += SubHudRenderer_Render;
+
+            subHudRendererHook = new Hook(
+                typeof(SubHudRenderer).GetMethod("Render"),
+                typeof(RewindCrystal).GetMethod("SubHudRenderer_Render", BindingFlags.NonPublic | BindingFlags.Static));
         }
 
         public static void Unload() {
@@ -65,7 +73,8 @@ namespace Celeste.Mod.IsaGrabBag {
             On.Celeste.Player.Update -= Player_Update;
             On.Celeste.Player.Render -= Player_Render;
             Everest.Events.Level.OnLoadLevel -= Level_OnLoadLevel;
-            On.Celeste.Mod.UI.SubHudRenderer.Render -= SubHudRenderer_Render;
+            subHudRendererHook?.Dispose();
+            subHudRendererHook = null;
         }
 
         public static void LoadGraphics() {
@@ -108,7 +117,7 @@ namespace Celeste.Mod.IsaGrabBag {
             }
         }
 
-        private static void SubHudRenderer_Render(On.Celeste.Mod.UI.SubHudRenderer.orig_Render orig, UI.SubHudRenderer self, Scene scene) {
+        private static void SubHudRenderer_Render(Action<SubHudRenderer, Scene> orig, SubHudRenderer self, Scene scene) {
             if (MInput.Keyboard.Pressed(Microsoft.Xna.Framework.Input.Keys.Q)) {
                 LoadGraphics();
             }
