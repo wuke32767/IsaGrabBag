@@ -24,6 +24,8 @@ namespace Celeste.Mod.IsaGrabBag {
         private float speed;
         private bool grabbed;
 
+        private static float targetOffset => GravityHelperImports.IsPlayerInverted() ? -2 : 22;
+
         public ZipLine(EntityData _data, Vector2 offset)
             : base(_data.Position + offset) {
             LeftEdge = X;
@@ -43,6 +45,20 @@ namespace Celeste.Mod.IsaGrabBag {
             sprite.Play("idle");
             sprite.JustifyOrigin(new Vector2(0.5f, 0.25f));
             Add(sprite);
+
+            if (GravityHelperImports.HasInterop()) {
+                Add(GravityHelperImports.CreatePlayerGravityListener((player, _, _) => {
+                    // if the player has changed gravity while grabbing, we need to move them to the correct position on the same frame
+                    if (currentGrabbed == null || !currentGrabbed.grabbed) return;
+
+                    float targetY = currentGrabbed.Y + targetOffset;
+                    if (targetY != player.Y) {
+                        GravityHelperImports.BeginOverride();
+                        player.MoveToY(targetY);
+                        GravityHelperImports.EndOverride();
+                    }
+                }));
+            }
         }
 
         public static int ZipLineState { get; private set; }
@@ -240,7 +256,8 @@ namespace Celeste.Mod.IsaGrabBag {
 
             self.Play("event:/char/madeline/crystaltheo_lift", null, 0f);
 
-            Vector2 playerLerp = new((self.X + currentGrabbed.X) / 2f, currentGrabbed.Y + 22);
+            float originalCurrentGrabbedY = currentGrabbed.Y;
+            Vector2 playerLerp = new((self.X + currentGrabbed.X) / 2f, originalCurrentGrabbedY + targetOffset);
 
             playerLerp.X = MathHelper.Clamp(playerLerp.X, currentGrabbed.LeftEdge, currentGrabbed.RightEdge);
             Vector2 zipLerp = new(playerLerp.X, currentGrabbed.Y);
@@ -253,6 +270,10 @@ namespace Celeste.Mod.IsaGrabBag {
             while (tween.Active) {
                 tween.Update();
 
+                // adjust the player's target Y in case gravity changes mid-tween
+                // note that this may cause us to move quickly near the end of the tween
+                playerLerp.Y = originalCurrentGrabbedY + targetOffset;
+
                 MoveEntityTo(self, Vector2.Lerp(playerInit, playerLerp, tween.Percent));
                 currentGrabbed.Position = Vector2.Lerp(zipInit, zipLerp, tween.Percent);
 
@@ -263,6 +284,8 @@ namespace Celeste.Mod.IsaGrabBag {
 
             self.Speed = speed;
 
+            playerLerp.Y = originalCurrentGrabbedY + targetOffset;
+
             MoveEntityTo(self, playerLerp);
             currentGrabbed.Position = zipLerp;
 
@@ -270,8 +293,10 @@ namespace Celeste.Mod.IsaGrabBag {
         }
 
         private static void MoveEntityTo(Actor ent, Vector2 position) {
+            GravityHelperImports.BeginOverride();
             ent.MoveToX(position.X);
             ent.MoveToY(position.Y);
+            GravityHelperImports.EndOverride();
         }
 
         private static bool CanGrabZip(ZipLine line) {

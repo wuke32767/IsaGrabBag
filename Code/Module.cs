@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Monocle;
+using MonoMod.ModInterop;
 using System;
 
 namespace Celeste.Mod.IsaGrabBag {
@@ -42,6 +43,8 @@ namespace Celeste.Mod.IsaGrabBag {
         public static MonoMod.Utils.DynamicData BingoUIModuleSettings;
 
         public override void Load() {
+            typeof(GravityHelperImports.Interop).ModInterop();
+
             ArrowBubble.Load();
             BadelineFollower.Load();
             DreamSpinnerRenderer.Load();

@@ -77,7 +77,7 @@ namespace Celeste.Mod.IsaGrabBag {
                 }
 
                 if (GravityDir.Y != 0) {
-                    changeValue(ref self.Speed.Y, GravityDir.Y);
+                    changeValue(ref self.Speed.Y, GravityDir.Y * (GravityHelperImports.IsPlayerInverted() ? -1 : 1));
                 }
 
                 self.DashDir = self.Speed.SafeNormalize();

@@ -344,6 +344,7 @@ namespace Celeste.Mod.IsaGrabBag {
         public Vector2[] hairPosition;
         public MTexture texture;
         public Vector2 velocity;
+        public bool inverted;
 
         public CharacterState(Player player) {
             pos = player.Position;
@@ -355,6 +356,7 @@ namespace Celeste.Mod.IsaGrabBag {
             PlayerHair hair = player.Hair;
             hairColor = hair.Color;
             hairPosition = new Vector2[10];
+            inverted = GravityHelperImports.IsPlayerInverted();
 
             for (int i = 0; i < Math.Min(hair.Nodes.Count, hairPosition.Length); ++i) {
                 hairPosition[i] = hair.Nodes[i];
@@ -368,6 +370,10 @@ namespace Celeste.Mod.IsaGrabBag {
             player.Dashes = dashCount;
 
             player.Sprite.Texture = texture;
+
+            if (GravityHelperImports.HasInterop()) {
+                GravityHelperImports.SetPlayerInverted(inverted);
+            }
 
             if (hairPosition == null) {
                 return;
