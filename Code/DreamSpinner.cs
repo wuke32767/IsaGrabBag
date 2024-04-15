@@ -21,7 +21,7 @@ namespace Celeste.Mod.IsaGrabBag {
         internal List<Vector2> offsets;
 
         private readonly int ID;
-        private DreamBlock block;
+        internal DreamBlock block;
         private bool hasCollided;
 
         public DreamSpinner(Vector2 position, bool _useOnce, bool _fake)
@@ -65,12 +65,12 @@ namespace Celeste.Mod.IsaGrabBag {
         public override void Awake(Scene scene) {
             base.Awake(scene);
 
-            color = Color.Black;
-            if (!SceneAs<Level>().Session.Inventory.DreamDash) {
-                color = new Color(25, 25, 25);
-            } else if (OneUse) {
-                color = new Color(30, 22, 10);
-            }
+            //color = Color.Black;
+            //if (!SceneAs<Level>().Session.Inventory.DreamDash) {
+            //    color = new Color(25, 25, 25);
+            //} else if (OneUse) {
+            //    color = new Color(30, 22, 10);
+            //}
 
             foreach (DreamSpinner spinner in Scene.Tracker.GetEntities<DreamSpinner>()) {
                 if (spinner.OneUse == OneUse && spinner.ID > ID && (spinner.Position - Position).LengthSquared() < 576f) {
@@ -87,6 +87,13 @@ namespace Celeste.Mod.IsaGrabBag {
                 return;
             } else {
                 block.Active = true;
+            }
+
+            color = Color.Black;
+            if (!ReverseHelperImports.PlayerHasDreamDash(block)) {
+                color = new Color(25, 25, 25);
+            } else if (OneUse) {
+                color = new Color(30, 22, 10);
             }
 
             base.Update();
@@ -114,7 +121,8 @@ namespace Celeste.Mod.IsaGrabBag {
                     hasCollided = isColliding;
                 }
 
-                if ((player.DashAttacking || player.StateMachine.State == Player.StDreamDash) && player.Inventory.DreamDash) {
+                //if ((player.DashAttacking || player.StateMachine.State == Player.StDreamDash) && player.Inventory.DreamDash) {
+                if ((player.DashAttacking || player.StateMachine.State == Player.StDreamDash) && ReverseHelperImports.PlayerHasDreamDash(block)) {
                     block.Collidable = true;
                     Collidable = false;
                 } else {
@@ -153,7 +161,7 @@ namespace Celeste.Mod.IsaGrabBag {
         private readonly MTexture bgBorderTexture;
 
         private VirtualRenderTarget dreamSpinnerTarget;
-        private List<DreamSpinner> spinnersToRender;
+        private IEnumerable<DreamSpinner> spinnersToRender;
         private const int chunk = 16;
         private const int layercount = 3;
         private const int padding = 2;
@@ -181,7 +189,7 @@ namespace Celeste.Mod.IsaGrabBag {
         public override void Awake(Scene scene) {
             base.Awake(scene);
 
-            dreamDashEnabled = SceneAs<Level>().Session.Inventory.DreamDash;
+            //dreamDashEnabled = SceneAs<Level>().Session.Inventory.DreamDash;
 
             Calc.PushRandom(0x12F3); // Chosen by Isa ¯\_(ツ)_/¯
 
@@ -217,7 +225,7 @@ namespace Celeste.Mod.IsaGrabBag {
         }
 
         public override void Render() {
-            if (spinnersToRender.Count > 0) {
+            if (spinnersToRender?.Any() ?? false) {
                 Draw.SpriteBatch.Draw(dreamSpinnerTarget, SceneAs<Level>().Camera.Position, Color.White);
             }
         }
@@ -241,36 +249,66 @@ namespace Celeste.Mod.IsaGrabBag {
         }
 
         private void BeforeRender() {
-            spinnersToRender = GetSpinnersToRender();
-            if (spinnersToRender.Count <= 0) {
+            spinnersToRender = null;
+            var allSpinnersToRender = GetSpinnersToRender();
+            if (allSpinnersToRender.Count <= 0) {
                 return;
             }
+            bool enabled = false, disabled = false;
 
             Camera camera = SceneAs<Level>().Camera;
-            dreamDashEnabled = SceneAs<Level>().Session.Inventory.DreamDash;
 
             dreamSpinnerTarget ??= VirtualContent.CreateRenderTarget("dream-spinner-renderer", 320, 180);
 
+            dreamDashEnabled = true;
             // First we draw our spinner textures and dream particles to a temp buffer
             // We draw the particles with a special BlendState so they will only render over spinner textures
             Engine.Graphics.GraphicsDevice.SetRenderTarget(GameplayBuffers.TempA);
             Engine.Graphics.GraphicsDevice.Clear(Color.Transparent);
 
-            Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix);
-            DrawSpinnerTextures();
-            Draw.SpriteBatch.End();
+            spinnersToRender = allSpinnersToRender.Where(x => ReverseHelperImports.PlayerHasDreamDash(x.block));
+            if (spinnersToRender.Any()) {
+                enabled = true;
+                Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix);
+                DrawSpinnerTextures();
+                Draw.SpriteBatch.End();
 
-            Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, DreamParticleBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, Matrix.Identity);
-            DrawDreamParticles(camera.Position);
-            Draw.SpriteBatch.End();
+                Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, DreamParticleBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, Matrix.Identity);
+                DrawDreamParticles(camera.Position);
+                Draw.SpriteBatch.End();
+            }
+
+            dreamDashEnabled = false;
+            // First we draw our spinner textures and dream particles to a temp buffer
+            // We draw the particles with a special BlendState so they will only render over spinner textures
+            Engine.Graphics.GraphicsDevice.SetRenderTarget(GameplayBuffers.TempB);
+            Engine.Graphics.GraphicsDevice.Clear(Color.Transparent);
+
+            spinnersToRender = allSpinnersToRender.Where(x => !ReverseHelperImports.PlayerHasDreamDash(x.block));
+            if (spinnersToRender.Any()) {
+                disabled = true;
+                Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix);
+                DrawSpinnerTextures();
+                Draw.SpriteBatch.End();
+
+                Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, DreamParticleBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, Matrix.Identity);
+                DrawDreamParticles(camera.Position);
+                Draw.SpriteBatch.End();
+            }
 
             // We then switch to our main target, draw our borders, then draw the spinner textures + dream particles on top
             Engine.Graphics.GraphicsDevice.SetRenderTarget(dreamSpinnerTarget);
             Engine.Graphics.GraphicsDevice.Clear(Color.Transparent);
 
             Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.None, RasterizerState.CullNone, null, camera.Matrix);
+            spinnersToRender = allSpinnersToRender;
             DrawSpinnerBorders();
-            Draw.SpriteBatch.Draw(GameplayBuffers.TempA, camera.Position, Color.White);
+            if (enabled) {
+                Draw.SpriteBatch.Draw(GameplayBuffers.TempA, camera.Position, Color.White);
+            }
+            if (disabled) {
+                Draw.SpriteBatch.Draw(GameplayBuffers.TempB, camera.Position, Color.White);
+            }
             Draw.SpriteBatch.End();
         }
 
@@ -341,7 +379,7 @@ namespace Celeste.Mod.IsaGrabBag {
 
         private void DrawSpinnerBorders() {
             foreach (DreamSpinner spinner in spinnersToRender) {
-                Color borderColor = !dreamDashEnabled ? Color.Gray : spinner.OneUse ? Color.Orange * 0.9f : Color.White;
+                Color borderColor = !ReverseHelperImports.PlayerHasDreamDash(spinner.block) ? Color.Gray : spinner.OneUse ? Color.Orange * 0.9f : Color.White;
                 fgBorderTexture.Draw(spinner.Position, origin, borderColor, Vector2.One, spinner.rotation);
                 foreach (Vector2 bgOffset in spinner.offsets) {
                     bgBorderTexture.Draw(bgOffset, origin, borderColor);
