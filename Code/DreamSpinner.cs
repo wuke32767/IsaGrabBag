@@ -2,7 +2,9 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Monocle;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Celeste.Mod.IsaGrabBag {
     [Tracked]
@@ -135,6 +137,7 @@ namespace Celeste.Mod.IsaGrabBag {
     public class DreamSpinnerRenderer : Entity {
         private const int ParticleCount = 630; // Particle count for a 320x180 Dream Block
         private static readonly Vector2 origin = new Vector2(12f, 12f);
+        //private static readonly BlendState DreamParticleBlend = BlendState.AlphaBlend;
         private static readonly BlendState DreamParticleBlend = new() {
             ColorSourceBlend = Blend.DestinationAlpha,
             ColorDestinationBlend = Blend.InverseSourceAlpha,
@@ -151,7 +154,10 @@ namespace Celeste.Mod.IsaGrabBag {
 
         private VirtualRenderTarget dreamSpinnerTarget;
         private List<DreamSpinner> spinnersToRender;
-        private DreamParticle[] particles;
+        private const int chunk = 16;
+        private const int layercount = 3;
+        private const int padding = 2;
+        private List<DreamParticle>[,,] particles;
         private bool dreamDashEnabled;
         private float animTimer;
 
@@ -179,19 +185,29 @@ namespace Celeste.Mod.IsaGrabBag {
 
             Calc.PushRandom(0x12F3); // Chosen by Isa ¯\_(ツ)_/¯
 
-            particles = new DreamParticle[ParticleCount];
-            for (int i = 0; i < particles.Length; i++) {
-                particles[i].Position = new Vector2(Calc.Random.NextFloat(320f), Calc.Random.NextFloat(180f));
-                particles[i].Layer = Calc.Random.Choose(0, 1, 1, 2, 2, 2);
-                particles[i].TimeOffset = Calc.Random.NextFloat();
-                particles[i].Color = particles[i].Layer switch {
-                    0 => Calc.Random.Choose(Calc.HexToColor("FFEF11"), Calc.HexToColor("FF00D0"), Calc.HexToColor("08a310")),
-                    1 => particles[i].Color = Calc.Random.Choose(Calc.HexToColor("5fcde4"), Calc.HexToColor("7fb25e"), Calc.HexToColor("E0564C")),
-                    2 => particles[i].Color = Calc.Random.Choose(Calc.HexToColor("5b6ee1"), Calc.HexToColor("CC3B3B"), Calc.HexToColor("7daa64")),
-                    _ => Color.LightGray
-                };
+            particles = new List<DreamParticle>[3, 320 / chunk + 1, 180 / chunk + 1];
+            unsafe {
+                var legacyparticles = stackalloc DreamParticle[ParticleCount];
+                for (int i = 0; i < ParticleCount; i++) {
+                    legacyparticles[i].Position = new Vector2(Calc.Random.NextFloat(320f), Calc.Random.NextFloat(180f));
+                    legacyparticles[i].Layer = Calc.Random.Choose(0, 1, 1, 2, 2, 2);
+                    legacyparticles[i].TimeOffset = Calc.Random.NextFloat();
+                    legacyparticles[i].Color = legacyparticles[i].Layer switch {
+                        0 => Calc.Random.Choose(Calc.HexToColor("FFEF11"), Calc.HexToColor("FF00D0"), Calc.HexToColor("08a310")),
+                        1 => legacyparticles[i].Color = Calc.Random.Choose(Calc.HexToColor("5fcde4"), Calc.HexToColor("7fb25e"), Calc.HexToColor("E0564C")),
+                        2 => legacyparticles[i].Color = Calc.Random.Choose(Calc.HexToColor("5b6ee1"), Calc.HexToColor("CC3B3B"), Calc.HexToColor("7daa64")),
+                        _ => Color.LightGray
+                    };
+                }
+                for (int i = 0; i < ParticleCount; i++) {
+                    var current = legacyparticles[i];
+                    int layer = current.Layer;
+                    int x = (int)(current.Position.X / chunk);
+                    int y = (int)(current.Position.Y / chunk);
+                    var list = particles[layer, x, y] ?? (particles[layer, x, y] = new());
+                    list.Add(current);
+                }
             }
-
             Calc.PopRandom();
         }
 
@@ -231,7 +247,7 @@ namespace Celeste.Mod.IsaGrabBag {
             }
 
             Camera camera = SceneAs<Level>().Camera;
-            dreamDashEnabled = SceneAs<Level>().Session.Inventory.DreamDash;            
+            dreamDashEnabled = SceneAs<Level>().Session.Inventory.DreamDash;
 
             dreamSpinnerTarget ??= VirtualContent.CreateRenderTarget("dream-spinner-renderer", 320, 180);
 
@@ -267,24 +283,59 @@ namespace Celeste.Mod.IsaGrabBag {
             }
         }
 
+        private void DrawDreamParticlesAt(Vector2 cameraPos, Vector2 from, Vector2 to) {//to - from < (320, 180)
+            for (int layer = 0; layer < 3; layer++) {
+                var layerOff = cameraPos * (0.7f - (0.25f * layer));
+                var lf = from + layerOff;
+                var lt = to + layerOff;
+                int xfrom = (int)Math.Floor(Utils.Mod(lf.X, 320f) / chunk) % particles.GetLength(1);
+                int xto = (int)Math.Ceiling(Utils.Mod(lt.X, 320f) / chunk);
+                int yfrom = (int)Math.Floor(Utils.Mod(lf.Y, 180f) / chunk) % particles.GetLength(2);
+                int yto = (int)Math.Ceiling(Utils.Mod(lt.Y, 180f) / chunk);
+                for (var x = xfrom; x != xto; x = (x + 1) % particles.GetLength(1)) {
+                    for (var y = yfrom; y != yto; y = (y + 1) % particles.GetLength(2)) {
+                        var list = particles[layer, x, y];
+                        if (list is not null) {
+                            foreach (var particle in list) {
+                                Color color = dreamDashEnabled ? particle.Color : Color.LightGray * (0.5f + (layer / 2f * 0.5f));
+
+                                MTexture texture = layer switch {
+                                    0 => particleTextures[3 - (int)(((particle.TimeOffset * 4f) + animTimer) % 4f)],
+                                    1 => particleTextures[1 + (int)(((particle.TimeOffset * 2f) + animTimer) % 2f)],
+                                    _ => particleTextures[2]
+                                };
+
+                                Vector2 vector = particle.Position - layerOff;
+                                Vector2 position = new() {
+                                    X = Utils.Mod(vector.X, 320f),
+                                    Y = Utils.Mod(vector.Y, 180f)
+                                };
+                                if (position.X >= from.X && position.X <= to.X
+                                    && position.Y >= from.Y && position.Y <= to.Y) {
+                                    texture.DrawCentered(position, color);
+                                }
+                            }
+                        }
+                    }
+                }
+                //Vector2 vector2 = new Vector2(xfrom * chunk, yfrom * chunk) - layerOff;
+                //Vector2 position2 = new() {
+                //    X = Utils.Mod(vector2.X, 320f),
+                //    Y = Utils.Mod(vector2.Y, 180f)
+                //};
+                //Vector2 vector3 = new Vector2(xto * chunk, yto * chunk) - layerOff;
+                //Vector2 position3 = new() {
+                //    X = Utils.Mod(vector3.X, 320f),
+                //    Y = Utils.Mod(vector3.Y, 180f)
+                //};
+                //Draw.Line(position2, new(position2.X, position3.Y), Color.Green);
+                //Draw.Line(position2, new(position3.X, position2.Y), Color.Green);
+            }
+            //Draw.HollowRect(from, to.X - from.X, to.Y - from.Y, Color.Aqua);
+        }
         private void DrawDreamParticles(Vector2 cameraPos) {
-            for (int i = 0; i < particles.Length; i++) {
-                int layer = particles[i].Layer;
-                Color color = dreamDashEnabled ? particles[i].Color : Color.LightGray * (0.5f + (layer / 2f * 0.5f));
-
-                MTexture texture = layer switch {
-                    0 => particleTextures[3 - (int)(((particles[i].TimeOffset * 4f) + animTimer) % 4f)],
-                    1 => particleTextures[1 + (int)(((particles[i].TimeOffset * 2f) + animTimer) % 2f)],
-                    _ => particleTextures[2]
-                };
-
-                Vector2 vector = particles[i].Position - (cameraPos * (0.7f - (0.25f * layer)));
-                Vector2 position = new() {
-                    X = Utils.Mod(vector.X, 320f),
-                    Y = Utils.Mod(vector.Y, 180f)
-                };
-
-                texture.DrawCentered(position, color);
+            foreach (DreamSpinner spinner in spinnersToRender) {
+                DrawDreamParticlesAt(cameraPos, spinner.Position - new Vector2(8 + padding, 8 + padding) - cameraPos, spinner.Position + new Vector2(8 + padding, 8 + padding) - cameraPos);
             }
         }
 
