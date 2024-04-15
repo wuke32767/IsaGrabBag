@@ -289,9 +289,9 @@ namespace Celeste.Mod.IsaGrabBag {
                 var lf = from + layerOff;
                 var lt = to + layerOff;
                 int xfrom = (int)Math.Floor(Utils.Mod(lf.X, 320f) / chunk) % particles.GetLength(1);
-                int xto = (int)Math.Ceiling(Utils.Mod(lt.X, 320f) / chunk);
+                int xto = (int)Math.Ceiling(Utils.Mod(lt.X, 320f) / chunk) % particles.GetLength(1);
                 int yfrom = (int)Math.Floor(Utils.Mod(lf.Y, 180f) / chunk) % particles.GetLength(2);
-                int yto = (int)Math.Ceiling(Utils.Mod(lt.Y, 180f) / chunk);
+                int yto = (int)Math.Ceiling(Utils.Mod(lt.Y, 180f) / chunk) % particles.GetLength(2);
                 for (var x = xfrom; x != xto; x = (x + 1) % particles.GetLength(1)) {
                     for (var y = yfrom; y != yto; y = (y + 1) % particles.GetLength(2)) {
                         var list = particles[layer, x, y];
