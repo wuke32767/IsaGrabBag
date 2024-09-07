@@ -11,7 +11,7 @@ placements.entities.isaBag/dreamSpinner.tooltips.useOnce=Whether the spinner sho
 # Friendly Kevin
 placements.entities.isaBag/arrowBlock.tooltips.distance=The maximum distance the Kevin can move, in pixels.
 placements.entities.isaBag/arrowBlock.tooltips.inverted=Whether the Kevin should move in the opposite direction of the player's movement.
-placements.entities.isaBag/arrowBlock.tooltips.movementRestriction=The axis the Kevin is allowed to move on. Use "no_limit" for free movement.
+placements.entities.isaBag/arrowBlock.tooltips.movementRestriction=The axis to which the Kevin is restricted. Use "None" for free movement.
 
 # Rewind Crystal
 placements.entities.isaBag/rewindCrystal.tooltips.oneUse=Whether the refill should respawn after being used.

@@ -2,7 +2,10 @@ mods.isaBag.name=Isa's Grab Bag
 
 # -- Entities --
 # Arrow Bubble
-# entities.isaBag/arrowBubble.placements.name.default=Friendly Kevin
+entities.isaBag/arrowBubble.placements.name.up=Arrow Bubble (Up)
+entities.isaBag/arrowBubble.placements.name.down=Arrow Bubble (Down)
+entities.isaBag/arrowBubble.placements.name.left=Arrow Bubble (Left)
+entities.isaBag/arrowBubble.placements.name.right=Arrow Bubble (Right)
 entities.isaBag/arrowBubble.attributes.description.direction=The direction that the bubble will curve in.
 
 # Corner Boost Block
@@ -18,7 +21,7 @@ entities.isaBag/dreamSpinner.attributes.description.useOnce=Whether the spinner 
 entities.isaBag/arrowBlock.placements.name.default=Friendly Kevin
 entities.isaBag/arrowBlock.attributes.description.distance=The maximum distance the Kevin can move, in pixels.
 entities.isaBag/arrowBlock.attributes.description.inverted=Whether the Kevin should move in the opposite direction of the player's movement.
-entities.isaBag/arrowBlock.attributes.description.movementRestriction=The axis the Kevin is allowed to move on. Use "no_limit" for free movement.
+entities.isaBag/arrowBlock.attributes.description.movementRestriction=The axis to which the Kevin is restricted. Use "None" for free movement.
 
 # Rewind Crystal
 # entities.isaBag/rewindCrystal.placements.name
