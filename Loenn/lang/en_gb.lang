@@ -37,7 +37,7 @@ entities.isaBag/rewindCrystal.placements.name.default=Rewind Crystal
 entities.isaBag/rewindCrystal.attributes.description.oneUse=Whether the refill should respawn after being used.
 
 # Water Boost Controller
-# entities.isaBag/waterBoost.placements.name
+entities.isaBag/waterBoost.placements.name.default=Water Boost Controller
 entities.isaBag/waterBoost.attributes.description.boostEnabled=Whether to enable waterboosting in the map.
 
 # Zipline
