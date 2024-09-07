@@ -15,7 +15,7 @@ entities.isaBag/cornerBlock.attributes.description.useTileset=Whether to use the
 entities.isaBag/dreamSpinner.attributes.description.useOnce=Whether the spinner should shatter after being dashed through.
 
 # Friendly Kevin
-# entities.isaBag/arrowBlock.placements.name
+entities.isaBag/arrowBlock.placements.name.default=Friendly Kevin
 entities.isaBag/arrowBlock.attributes.description.distance=The maximum distance the Kevin can move, in pixels.
 entities.isaBag/arrowBlock.attributes.description.inverted=Whether the Kevin should move in the opposite direction of the player's movement.
 entities.isaBag/arrowBlock.attributes.description.movementRestriction=The axis the Kevin is allowed to move on. Use "no_limit" for free movement.
