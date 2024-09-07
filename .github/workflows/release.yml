@@ -45,5 +45,6 @@ jobs:
           Code/bin
           Effects
           Graphics
+          Loenn
           everest.yaml
           !Code/bin/Debug

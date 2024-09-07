@@ -1,0 +1,43 @@
+mods.isaBag.name=Isa's Grab Bag
+
+# -- Entities --
+# Arrow Bubble
+# entities.isaBag/arrowBubble.placements.name.default=Friendly Kevin
+entities.isaBag/arrowBubble.attributes.description.direction=The direction that the bubble will curve in.
+
+# Corner Boost Block
+# entities.isaBag/cornerBlock.placements.name
+entities.isaBag/cornerBlock.attributes.description.tiletype=Changes the visual appearance of the block.
+entities.isaBag/cornerBlock.attributes.description.useTileset=Whether to use the tiletype field instead of the default block texture.
+
+# Dream Spinner
+# entities.isaBag/dreamSpinner.placements.name
+entities.isaBag/dreamSpinner.attributes.description.useOnce=Whether the spinner should shatter after being dashed through.
+
+# Friendly Kevin
+# entities.isaBag/arrowBlock.placements.name
+entities.isaBag/arrowBlock.attributes.description.distance=The maximum distance the Kevin can move, in pixels.
+entities.isaBag/arrowBlock.attributes.description.inverted=Whether the Kevin should move in the opposite direction of the player's movement.
+entities.isaBag/arrowBlock.attributes.description.movementRestriction=The axis the Kevin is allowed to move on. Use "no_limit" for free movement.
+
+# Rewind Crystal
+# entities.isaBag/rewindCrystal.placements.name
+entities.isaBag/rewindCrystal.attributes.description.oneUse=Whether the refill should respawn after being used.
+
+# Water Boost Controller
+# entities.isaBag/waterBoost.placements.name
+entities.isaBag/waterBoost.attributes.description.boostEnabled=Whether to enable waterboosting in the map.
+
+# Zipline
+# entities.isaBag/zipline.placements.name
+entities.isaBag/zipline.attributes.description.usesStamina=Whether riding the zipline or jumping from it should consume stamina.
+
+# -- Triggers --
+# Core Wind Trigger
+# triggers.isaBag/coreWindTrigger.placements.name
+triggers.isaBag/coreWindTrigger.attributes.description.patternHot=The wind pattern to use when the core mode is Hot.
+triggers.isaBag/coreWindTrigger.attributes.description.patternCold=The wind pattern to use when the core mode is Cold.
+
+# Force Variant Trigger
+triggers.ForceVariantTrigger.attributes.description.variantChange=The variant to change.
+triggers.ForceVariantTrigger.attributes.description.enableStyle=The change to apply to the variant when entering the trigger.\n* Enabled/Disabled: turns the variant on or off.\n* Permanent: applies the change to the session so it persists after S&Q.\n* Temporary: reverts the change after leaving the trigger.\n* Toggle: changes the variant to the opposite of its current state.\n* SetToDefault: sets the variant to its initial state.
