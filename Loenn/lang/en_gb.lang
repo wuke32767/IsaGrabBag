@@ -46,7 +46,7 @@ entities.isaBag/zipline.attributes.description.usesStamina=Whether riding the zi
 
 # -- Triggers --
 # Core Wind Trigger
-# triggers.isaBag/coreWindTrigger.placements.name
+triggers.isaBag/coreWindTrigger.placements.name.default=Core Wind Trigger
 triggers.isaBag/coreWindTrigger.attributes.description.patternHot=The wind pattern to use when the core mode is Hot.
 triggers.isaBag/coreWindTrigger.attributes.description.patternCold=The wind pattern to use when the core mode is Cold.
 
