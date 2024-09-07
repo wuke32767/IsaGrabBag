@@ -17,7 +17,10 @@ entities.isaBag/cornerBlock.attributes.description.tiletype=Changes the visual a
 entities.isaBag/cornerBlock.attributes.description.useTileset=Whether to use the tiletype field instead of the default block texture.
 
 # Dream Spinner
-# entities.isaBag/dreamSpinner.placements.name
+entities.isaBag/dreamSpinner.placements.name.default=Dream Spinner
+entities.isaBag/dreamSpinner.placements.name.oneUse=Dream Spinner (One Use)
+entities.isaBag/dreamSpinFake.placements.name.default=Dream Spinner (Fake)
+entities.isaBag/dreamSpinner.attributes.name.useOnce=One Use
 entities.isaBag/dreamSpinner.attributes.description.useOnce=Whether the spinner should shatter after being dashed through.
 
 # Friendly Kevin
