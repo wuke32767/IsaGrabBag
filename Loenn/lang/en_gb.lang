@@ -29,8 +29,11 @@ entities.isaBag/arrowBlock.attributes.description.distance=The maximum distance 
 entities.isaBag/arrowBlock.attributes.description.inverted=Whether the Kevin should move in the opposite direction of the player's movement.
 entities.isaBag/arrowBlock.attributes.description.movementRestriction=The axis to which the Kevin is restricted. Use "None" for free movement.
 
+# Pause Crystal
+entities.isaBag/pauseCrystal.placements.name.default=Pause Crystal
+
 # Rewind Crystal
-# entities.isaBag/rewindCrystal.placements.name
+entities.isaBag/rewindCrystal.placements.name.default=Rewind Crystal
 entities.isaBag/rewindCrystal.attributes.description.oneUse=Whether the refill should respawn after being used.
 
 # Water Boost Controller
