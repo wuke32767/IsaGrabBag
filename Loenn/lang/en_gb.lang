@@ -8,6 +8,9 @@ entities.isaBag/arrowBubble.placements.name.left=Arrow Bubble (Left)
 entities.isaBag/arrowBubble.placements.name.right=Arrow Bubble (Right)
 entities.isaBag/arrowBubble.attributes.description.direction=The direction that the bubble will curve in.
 
+# Badeline Friend
+entities.isaBag/baddyFollow.placements.name.default=Badeline Friend
+
 # Corner Boost Block
 # entities.isaBag/cornerBlock.placements.name
 entities.isaBag/cornerBlock.attributes.description.tiletype=Changes the visual appearance of the block.
