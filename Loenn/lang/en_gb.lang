@@ -12,7 +12,7 @@ entities.isaBag/arrowBubble.attributes.description.direction=The direction that 
 entities.isaBag/baddyFollow.placements.name.default=Badeline Friend
 
 # Corner Boost Block
-# entities.isaBag/cornerBlock.placements.name
+# NOTE: deprecated entity, no placements added
 entities.isaBag/cornerBlock.attributes.description.tiletype=Changes the visual appearance of the block.
 entities.isaBag/cornerBlock.attributes.description.useTileset=Whether to use the tiletype field instead of the default block texture.
 
@@ -45,5 +45,6 @@ triggers.isaBag/coreWindTrigger.attributes.description.patternHot=The wind patte
 triggers.isaBag/coreWindTrigger.attributes.description.patternCold=The wind pattern to use when the core mode is Cold.
 
 # Force Variant Trigger
+# NOTE: deprecated trigger, no placements added
 triggers.ForceVariantTrigger.attributes.description.variantChange=The variant to change.
 triggers.ForceVariantTrigger.attributes.description.enableStyle=The change to apply to the variant when entering the trigger.\n* Enabled/Disabled: turns the variant on or off.\n* Permanent: applies the change to the session so it persists after S&Q.\n* Temporary: reverts the change after leaving the trigger.\n* Toggle: changes the variant to the opposite of its current state.\n* SetToDefault: sets the variant to its initial state.
