@@ -41,7 +41,7 @@ entities.isaBag/waterBoost.placements.name.default=Water Boost Controller
 entities.isaBag/waterBoost.attributes.description.boostEnabled=Whether to enable waterboosting in the map.
 
 # Zipline
-# entities.isaBag/zipline.placements.name
+entities.isaBag/zipline.placements.name.default=Zipline
 entities.isaBag/zipline.attributes.description.usesStamina=Whether riding the zipline or jumping from it should consume stamina.
 
 # -- Triggers --
