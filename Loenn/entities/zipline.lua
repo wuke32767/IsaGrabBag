@@ -3,9 +3,6 @@ local drawableLine = require("structs.drawable_line")
 local drawableRectangle = require("structs.drawable_rectangle")
 local utils = require("utils")
 
-local zipline = {}
-
-
 local handleTex = "isafriend/objects/zipline/handle"
 local handleEndTex = "isafriend/objects/zipline/handle_end"
 
@@ -14,6 +11,8 @@ local highlightColor = {0.55, 0.5, 0.6, 1.0}
 
 local width = 16
 local halfWidth = 8
+
+local zipline = {}
 
 zipline.name = "isaBag/zipline"
 zipline.depth = -500
@@ -128,144 +127,3 @@ function zipline.updateMoveSelection(room, entity, node, selection, offsetX, off
 end
 
 return zipline
-
---[[
-
--- Fix node selection rectangles after vertical move
-function updateMoveSelection(room, entity, nodeIndex, selection, offsetX, offsetY)
-    if nodeIndex > 0 then
-        for _, node in ipairs(entity.nodes) do
-            selection.y += offsetY
-        end
-    end
-end
-
--- Zipline nodes should only move vertically when the main entity does
-function zipline.onMove(room, entity, nodeIndex, offsetX, offsetY)
-    if nodeIndex == 0 then
-        for _, node in ipairs(entity.nodes) do
-            node.y += offsetY
-        end
-    elseif nodeIndex > 0 and offsetY ~= 0 then
-        return false
-    end
-end
-
--- Mostly copied from entities.moveSelection
-function zipline.move(room, entity, node, offsetX, offsetY)
-    if node == 0 then
-        entity.x += offsetX
-        entity.y += offsetY
-        
-        -- When the main entity moves vertically, the zipline nodes should follow
-        for _, node in ipairs(entity.nodes) do
-            node.y = entity.y
-        end
-        
-        else
-            local nodes = entity.nodes
-
-            if nodes and node <= #nodes then
-                local target = nodes[node]
-
-                target.x += offsetX
-                target.y += offsetY
-            end
-    end
-end
-
-function zipline.selection(room, entity)
-    local x, y = entity.x or 0, entity.y or 0
-    local width, height = entity.width or 8, entity.height or 8
-    local halfWidth, halfHeight = math.floor(entity.width / 2), math.floor(entity.height / 2)
-
-    local nodes = entity.nodes or {{x = 0, y = 0}}
-    local nodeX, nodeY = nodes[1].x, nodes[1].y
-    local centerNodeX, centerNodeY = nodeX + halfWidth, nodeY + halfHeight
-
-    local theme = string.lower(entity.theme or "normal")
-    local themeData = themeTextures[theme] or themeTextures["normal"]
-
-    local cogSprite = drawableSprite.fromTexture(themeData.nodeCog, entity)
-    local cogWidth, cogHeight = cogSprite.meta.width, cogSprite.meta.height
-
-    local mainRectangle = utils.rectangle(x, y, width, height)
-    local nodeRectangle = utils.rectangle(centerNodeX - math.floor(cogWidth / 2), centerNodeY - math.floor(cogHeight / 2), cogWidth, cogHeight)
-
-    return mainRectangle, {nodeRectangle}
-end
-
-local function addNodeSprites(sprites, entity, cogTexture, centerX, centerY, centerNodeX, centerNodeY)
-    local nodeCogSprite = drawableSprite.fromTexture(cogTexture, entity)
-
-    nodeCogSprite:setPosition(centerNodeX, centerNodeY)
-    nodeCogSprite:setJustification(0.5, 0.5)
-
-    local points = {centerX, centerY, centerNodeX, centerNodeY}
-    local leftLine = drawableLine.fromPoints(points, ropeColor, 1)
-    local rightLine = drawableLine.fromPoints(points, ropeColor, 1)
-
-    leftLine:setOffset(0, 4.5)
-    rightLine:setOffset(0, -4.5)
-
-    leftLine.depth = 500
-    rightLine.depth = 500
-
-    for _, sprite in ipairs(leftLine:getDrawableSprite()) do
-        table.insert(sprites, sprite)
-    end
-
-    for _, sprite in ipairs(rightLine:getDrawableSprite()) do
-        table.insert(sprites, sprite)
-    end
-
-    table.insert(sprites, nodeCogSprite)
-end
-
-local function addBlockSprites(sprites, entity, blockTexture, lightsTexture, x, y, width, height)
-    local rectangle = drawableRectangle.fromRectangle("fill", x + 2, y + 2, width - 4, height - 4, centerColor)
-
-    local frameNinePatch = drawableNinePatch.fromTexture(blockTexture, blockNinePatchOptions, x, y, width, height)
-    local frameSprites = frameNinePatch:getDrawableSprite()
-
-    local lightsSprite = drawableSprite.fromTexture(lightsTexture, entity)
-
-    lightsSprite:addPosition(math.floor(width / 2), 0)
-    lightsSprite:setJustification(0.5, 0.0)
-
-    table.insert(sprites, rectangle:getDrawableSprite())
-
-    for _, sprite in ipairs(frameSprites) do
-        table.insert(sprites, sprite)
-    end
-
-    table.insert(sprites, lightsSprite)
-end
-
-function zipline.sprite(room, entity)
-    local sprites = {}
-
-    local x, y = entity.x or 0, entity.y or 0
-    local width, height = entity.width or 16, entity.height or 16
-    local halfWidth, halfHeight = math.floor(entity.width / 2), math.floor(entity.height / 2)
-
-    local nodes = entity.nodes or {{x = 0, y = 0}}
-    local nodeX, nodeY = nodes[1].x, nodes[1].y
-
-    local centerX, centerY = x + halfWidth, y + halfHeight
-    local centerNodeX, centerNodeY = nodeX + halfWidth, nodeY + halfHeight
-
-    local theme = string.lower(entity.theme or "normal")
-    local themeData = themeTextures[theme] or themeTextures["normal"]
-
-    addNodeSprites(sprites, entity, themeData.nodeCog, centerX, centerY, centerNodeX, centerNodeY)
-    addBlockSprites(sprites, entity, themeData.block, themeData.lights, x, y, width, height)
-
-    return sprites
-end
-
-
-
-return zipline
-
---]]
