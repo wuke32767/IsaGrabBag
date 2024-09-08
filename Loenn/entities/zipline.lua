@@ -76,12 +76,12 @@ end
 function zipline.selection(room, entity)
     local x, y = entity.x or 0, entity.y or 0
     
-    local mainRect = utils.rectangle(x - halfWidth, y - halfWidth, 16, 17)
+    local mainRect = utils.rectangle(x - halfWidth, y - halfWidth, width, width + 1)
     local nodeRects = {}
     
     if entity.nodes then
         for _, node in ipairs(entity.nodes) do
-            local nodeRect = utils.rectangle(node.x - halfWidth, y - halfWidth, 16, 17)    
+            local nodeRect = utils.rectangle(node.x - halfWidth, y - halfWidth, width, width + 1)    
             table.insert(nodeRects, nodeRect)
         end
     end
@@ -90,34 +90,32 @@ function zipline.selection(room, entity)
 end
 
 -- Custom move function to limit node movement to the x-axis
-function zipline.move(room, entity, node, offsetX, offsetY)
+function zipline.move(room, entity, nodeIndex, offsetX, offsetY) 
     local nodes = entity.nodes
     
-    if node == 0 then
+    if nodeIndex == 0 then
         entity.x += offsetX
         entity.y += offsetY
         
         -- When the main entity moves vertically, the zipline nodes should follow
         if nodes then
-            for i, node in ipairs(entity.nodes) do
-                if i <= #nodes then
-                    node.y = entity.y
-                end
+            for _, node in ipairs(nodes) do
+                node.y = entity.y
             end
         end
         
-        -- When a node moves, ignore any vertical movement
-        else
-            if nodes and node <= #nodes then
-                local target = nodes[node]
-                target.x += offsetX
-            end
+    -- When a node moves, ignore any vertical movement
+    else
+        if nodes and nodeIndex <= #nodes then
+            local target = nodes[nodeIndex]
+            target.x += offsetX
+        end
     end
 end
 
 -- The node selection should always match the height of the entity selection
-function zipline.updateMoveSelection(room, entity, node, selection, offsetX, offsetY)
-    if node == 0 then
+function zipline.updateMoveSelection(room, entity, nodeIndex, selection, offsetX, offsetY)
+    if nodeIndex == 0 then
         selection.x += offsetX
         selection.y += offsetY        
     else
